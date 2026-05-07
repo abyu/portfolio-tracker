@@ -7,3 +7,4 @@ edition = "2024"
 axum = "0.7"
 tokio = { version = "1", features = ["full"] }
 dotenvy = "0.15"
+sqlx = { version = "0.7", features = ["sqlite", "runtime-tokio", "migrate"] }
