@@ -1027,6 +1027,7 @@ dependencies = [
  "axum",
  "dotenvy",
  "sqlx",
+ "thiserror",
  "tokio",
 ]
 
