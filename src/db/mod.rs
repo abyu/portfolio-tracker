@@ -1,0 +1,1 @@
+pub mod stock_trade_repository;

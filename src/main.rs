@@ -5,6 +5,9 @@ use config::AppConfig;
 mod app_state;
 use app_state::AppState;
 use sqlx::sqlite::SqlitePoolOptions;
+mod models;
+mod db;
+use db::stock_trade_repository::StockTradeRepository;
 
 
 #[tokio::main]

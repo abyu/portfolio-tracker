@@ -1,0 +1,25 @@
+#[derive(Debug, sqlx::FromRow)]
+pub struct StockTrade {
+    pub id: i64,
+    pub ticker: String,
+    pub trade_type: String,
+    pub trade_date: String,
+    pub units: f64,
+    pub market_price_cents: i64,
+    pub fees_cents: i64,
+    pub amount_cents: i64,
+    pub currency: String,
+    pub created_at: String,
+}
+
+#[derive(Debug)]
+pub struct NewStockTrade {
+    pub ticker: String,
+    pub trade_type: String,
+    pub trade_date: String,
+    pub units: f64,
+    pub market_price_cents: i64,
+    pub fees_cents: i64,
+    pub amount_cents: i64,
+    pub currency: String,
+}
