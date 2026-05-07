@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Portfolio Tracker</title>
+</head>
+<body>
+    <h1>My Trades</h1>
+    <table>
+        <tr>
+            <th>Ticker</th>
+            <th>Type</th>
+            <th>Date</th>
+            <th>Units</th>
+            <th>Amount</th>
+        </tr>
+        {% for trade in trades %}
+        <tr>
+            <td>{{ trade.ticker }}</td>
+            <td>{{ trade.trade_type }}</td>
+            <td>{{ trade.trade_date }}</td>
+            <td>{{ trade.units }}</td>
+            <td>{{ trade.amount_cents }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</body>
+</html>

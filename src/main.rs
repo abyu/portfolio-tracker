@@ -7,7 +7,9 @@ use app_state::AppState;
 use sqlx::sqlite::SqlitePoolOptions;
 mod models;
 mod db;
-use db::stock_trade_repository::StockTradeRepository;
+
+mod routes;
+use routes::stock_trade::render_all;
 
 
 #[tokio::main]
@@ -20,13 +22,16 @@ async fn main() {
         .await
         .unwrap();
 
+    let tera = tera::Tera::new("templates/**/*.html").unwrap();
+
     let state = AppState {
         db: pool,
         config: config.clone(),
+        tera,
     };
 
     let app = Router::new()
-        .route("/", get(index))
+        .route("/", get(render_all))
         .with_state(state);
 
     let listener = tokio::net::TcpListener::bind(
@@ -35,8 +40,4 @@ async fn main() {
 
     println!("Listening on port {}", config.server_port);
     axum::serve(listener, app).await.unwrap();
-}
-
-async fn index() -> String {
-    return String::from("Hello")
 }
