@@ -1,0 +1,15 @@
+#[derive(Debug, sqlx::FromRow, serde::Serialize)]
+pub struct StockPrice {
+    pub id: i64,
+    pub ticker: String,
+    pub price_cents: i64,
+    pub currency: String,
+    pub fetched_at: String,
+}
+
+#[derive(Debug)]
+pub struct NewStockPrice {
+    pub ticker: String,
+    pub price_cents: i64,
+    pub currency: String,
+}
