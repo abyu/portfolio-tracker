@@ -1,6 +1,6 @@
 use crate::models::stock_price::*;
 
-struct StockPriceRepository {
+pub struct StockPriceRepository {
     pool: sqlx::SqlitePool,
 }
 

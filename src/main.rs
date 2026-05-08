@@ -7,9 +7,10 @@ use app_state::AppState;
 use sqlx::sqlite::SqlitePoolOptions;
 mod models;
 mod db;
-
 mod routes;
 use routes::stock_trade::render_all;
+mod service;
+
 
 
 #[tokio::main]
