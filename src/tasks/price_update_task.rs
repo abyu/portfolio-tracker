@@ -1,5 +1,3 @@
-use yahoo_finance_api::YahooConnector;
-
 use crate::service::price_update_service::{PriceUpdateService, TickerPriceProvider};
 use crate::db::stock_trade_repository::StockTradeRepository;
 

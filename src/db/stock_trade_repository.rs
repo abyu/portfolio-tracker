@@ -1,5 +1,4 @@
-use crate::models::stock_trade::StockTrade;
-use crate::models::stock_trade::NewStockTrade;
+use crate::models::stock_trade::{StockTrade, AggregatedStockTrade, NewStockTrade};
 
 pub struct StockTradeRepository {
     db_pool: sqlx::SqlitePool
@@ -23,6 +22,23 @@ impl StockTradeRepository {
         .await?;
 
         Ok(tickers)
+    }
+
+    pub async fn get_aggregated(&self) -> Result<Vec<AggregatedStockTrade>, sqlx::Error> {
+        let trades = sqlx::query_as::<_, AggregatedStockTrade>(
+            "SELECT
+                ticker,
+                SUM(CASE WHEN trade_type = 'BUY' THEN units ELSE -units END) as total_units,
+                SUM(CASE WHEN trade_type = 'BUY' THEN amount_cents ELSE -amount_cents END) as total_amount_cents,
+                currency
+            FROM stock_trades
+            GROUP BY ticker, currency
+            ORDER BY ticker"
+        )
+        .fetch_all(&self.db_pool)
+        .await?;
+
+        Ok(trades)
     }
 
     pub async fn save_trade(&self, trade: NewStockTrade) -> Result<i64, sqlx::Error> {
@@ -88,5 +104,60 @@ mod tests {
         assert_eq!(trades[0].ticker, "AAPL");
         assert_eq!(trades[0].units, 10.0);
         assert_eq!(trades[0].amount_cents, 150000);
+    }
+    
+    #[tokio::test]
+    async fn test_get_aggregated_trades() {
+        let pool = setup_db().await;
+        let repo = StockTradeRepository::new(pool);
+        repo.save_trade(NewStockTrade {
+            ticker: "AAPL".to_string(),
+            trade_type: "BUY".to_string(),
+            trade_date: "2024-01-01".to_string(),
+            units: 10.0,
+            market_price_cents: 15000,
+            fees_cents: 100,
+            amount_cents: 150000,
+            currency: "USD".to_string()
+        }).await.unwrap();
+        repo.save_trade(NewStockTrade {
+            ticker: "AAPL".to_string(),
+            trade_type: "SELL".to_string(),
+            trade_date: "2024-01-01".to_string(),
+            units: 5.0,
+            market_price_cents: 16000,
+            fees_cents: 100,
+            amount_cents: 160000,
+            currency: "USD".to_string()
+        }).await.unwrap();
+        repo.save_trade(NewStockTrade {
+            ticker: "AAPL".to_string(),
+            trade_type: "BUY".to_string(),
+            trade_date: "2024-01-01".to_string(),
+            units: 30.0,
+            market_price_cents: 19000,
+            fees_cents: 100,
+            amount_cents: 190000,
+            currency: "USD".to_string()
+        }).await.unwrap();
+        repo.save_trade(NewStockTrade {
+            ticker: "GOOG".to_string(),
+            trade_type: "BUY".to_string(),
+            trade_date: "2024-01-01".to_string(),
+            units: 10.0,
+            market_price_cents: 10000,
+            fees_cents: 100,
+            amount_cents: 100000,
+            currency: "USD".to_string()
+        }).await.unwrap();
+        let trades = repo.get_aggregated().await.unwrap();
+
+        assert_eq!(trades.len(), 2);
+        assert_eq!(trades[0].ticker, "AAPL");
+        assert_eq!(trades[0].total_units, 35.0);
+        assert_eq!(trades[0].total_amount_cents, 180000);
+        assert_eq!(trades[1].ticker, "GOOG");
+        assert_eq!(trades[1].total_units, 10.0);
+        assert_eq!(trades[1].total_amount_cents, 100000);
     }
 }

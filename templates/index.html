@@ -8,18 +8,18 @@
     <table>
         <tr>
             <th>Ticker</th>
-            <th>Type</th>
-            <th>Date</th>
             <th>Units</th>
-            <th>Amount</th>
+            <th>Average Price</th>
+            <th>Current Price</th>
+            <th>Gain/Loss</th>
         </tr>
         {% for trade in trades %}
         <tr>
             <td>{{ trade.ticker }}</td>
-            <td>{{ trade.trade_type }}</td>
-            <td>{{ trade.trade_date }}</td>
             <td>{{ trade.units }}</td>
-            <td>{{ trade.amount_cents }}</td>
+            <td>{{ trade.average_price_cents }}</td>
+            <td>{{ trade.current_price_cents }}</td>
+            <td>{{ trade.gain_loss_cents }}</td>
         </tr>
         {% endfor %}
     </table>
