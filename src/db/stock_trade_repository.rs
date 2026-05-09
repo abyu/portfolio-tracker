@@ -17,6 +17,14 @@ impl StockTradeRepository {
         Ok(trades)
     }
 
+    pub async fn get_tickers(&self) -> Result<Vec<String>, sqlx::Error> {
+        let tickers = sqlx::query_scalar("SELECT distinct ticker from stock_trades")
+        .fetch_all(&self.db_pool)
+        .await?;
+
+        Ok(tickers)
+    }
+
     pub async fn save_trade(&self, trade: NewStockTrade) -> Result<i64, sqlx::Error> {
         let result = sqlx::query("INSERT INTO stock_trades (ticker, trade_type, trade_date, units, market_price_cents, fees_cents, amount_cents, currency) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")
             .bind(trade.ticker)

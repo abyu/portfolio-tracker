@@ -12,11 +12,11 @@ pub trait TickerPriceProvider {
 }
 
 impl<T: TickerPriceProvider> PriceUpdateService<T> {
-    fn new(repo: StockPriceRepository, api: T) -> Self {
-        PriceUpdateService { stock_price_repo:repo, price_provider: api }
+    pub fn new(repo: StockPriceRepository, api: T) -> Self {
+        Self { stock_price_repo:repo, price_provider: api }
     }
 
-    async fn update_prices(&self, tickers: Vec<String>) -> Result<(), PriceUpdateError> {
+    pub async fn update_prices(&self, tickers: Vec<String>) -> Result<(), PriceUpdateError> {
         for ticker in tickers {
             let price = self.price_provider.get_price(ticker.as_str()).await?;
             let ticker_price = (price * 100.0).round() as i64;
