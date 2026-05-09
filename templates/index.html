@@ -17,9 +17,9 @@
         <tr>
             <td>{{ trade.ticker }}</td>
             <td>{{ trade.units }}</td>
-            <td>{{ trade.average_price_cents }}</td>
-            <td>{{ trade.current_price_cents }}</td>
-            <td>{{ trade.gain_loss_cents }}</td>
+            <td>{{ trade.average_price_cents | cents_to_dollars }}</td>
+            <td>{{ trade.current_price_cents | cents_to_dollars }}</td>
+            <td>{{ trade.gain_loss_cents | cents_to_dollars }}</td>
         </tr>
         {% endfor %}
     </table>

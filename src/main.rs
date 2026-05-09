@@ -30,7 +30,8 @@ async fn main() {
         .await
         .unwrap();
 
-    let tera = tera::Tera::new("templates/**/*.html").unwrap();
+    let mut tera = tera::Tera::new("templates/**/*.html").unwrap();
+    tera.register_filter("cents_to_dollars", routes::stock_trade::cents_to_dollars_filter);
 
     let yahoo = YahooConnector::new().unwrap();
     let price_service = PriceUpdateService::new(
