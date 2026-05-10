@@ -2,7 +2,7 @@ use crate::{models::stock_trade::{AggregatedStockTrade, NewStockTrade, StockTrad
 use async_trait::async_trait;
 
 pub struct SqliteStockTradeRepository {
-    db_pool: sqlx::SqlitePool
+    db_pool: sqlx::PgPool
 }
 
 #[async_trait]
@@ -11,8 +11,8 @@ impl StockTradeRepository for SqliteStockTradeRepository {
         let trades = sqlx::query_as::<_, AggregatedStockTrade>(
             "SELECT
                 ticker,
-                SUM(CASE WHEN trade_type = 'BUY' THEN units ELSE -units END) as total_units,
-                SUM(CASE WHEN trade_type = 'BUY' THEN amount_cents ELSE -amount_cents END) as total_amount_cents,
+                SUM(CASE WHEN trade_type = 'BUY' THEN units ELSE -units END)::DOUBLE PRECISION as total_units,
+                SUM(CASE WHEN trade_type = 'BUY' THEN amount_cents ELSE -amount_cents END)::BIGINT as total_amount_cents,
                 currency
             FROM stock_trades
             GROUP BY ticker, currency
@@ -34,7 +34,7 @@ impl StockTradeRepository for SqliteStockTradeRepository {
 }
 
 impl SqliteStockTradeRepository {
-    pub fn new(db_pool: sqlx::SqlitePool) -> Self {
+    pub fn new(db_pool: sqlx::PgPool) -> Self {
         Self { db_pool }
     }
 
@@ -46,7 +46,7 @@ impl SqliteStockTradeRepository {
     }
 
     pub async fn save_trade(&self, trade: NewStockTrade) -> Result<i64, sqlx::Error> {
-        let result = sqlx::query("INSERT INTO stock_trades (ticker, trade_type, trade_date, units, market_price_cents, fees_cents, amount_cents, currency) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")
+        let result = sqlx::query_scalar("INSERT INTO stock_trades (ticker, trade_type, trade_date, units, market_price_cents, fees_cents, amount_cents, currency) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id")
             .bind(trade.ticker)
             .bind(trade.trade_type)
             .bind(trade.trade_date)
@@ -55,43 +55,26 @@ impl SqliteStockTradeRepository {
             .bind(trade.fees_cents)
             .bind(trade.amount_cents)
             .bind(trade.currency)
-            .execute(&self.db_pool)
+            .fetch_one(&self.db_pool)
             .await?;
-        Ok(result.last_insert_rowid())
+        Ok(result)
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use sqlx::sqlite::SqlitePoolOptions;
 
-    async fn setup_db() -> sqlx::SqlitePool {
-        let pool = SqlitePoolOptions::new()
-            .connect("sqlite::memory:")
-            .await
-            .unwrap();
-
-        sqlx::migrate!("./migrations")
-            .run(&pool)
-            .await
-            .unwrap();
-
-        pool
-    }
-
-    #[tokio::test]
-    async fn test_get_all_trades_returns_empty() {
-        let pool = setup_db().await;
-        let repo = SqliteStockTradeRepository::new(pool);
+    #[sqlx::test(migrations = "./migrations")]
+    async fn test_get_all_trades_returns_empty(pool :sqlx::PgPool) {
+        let repo = SqliteStockTradeRepository::new(pool.clone());
         let trades = repo.get_all_trades().await.unwrap();
         assert!(trades.is_empty());
     }
     
-    #[tokio::test]
-    async fn test_get_all_trades_returns_records() {
-        let pool = setup_db().await;
-        let repo = SqliteStockTradeRepository::new(pool);
+    #[sqlx::test(migrations = "./migrations")]
+    async fn test_get_all_trades_returns_records(pool :sqlx::PgPool) {
+        let repo = SqliteStockTradeRepository::new(pool.clone());
         repo.save_trade(NewStockTrade {
             ticker: "AAPL".to_string(),
             trade_type: "BUY".to_string(),
@@ -110,10 +93,9 @@ mod tests {
         assert_eq!(trades[0].amount_cents, 150000);
     }
     
-    #[tokio::test]
-    async fn test_get_aggregated_trades() {
-        let pool = setup_db().await;
-        let repo = SqliteStockTradeRepository::new(pool);
+    #[sqlx::test(migrations = "./migrations")]
+    async fn test_get_aggregated_trades(pool :sqlx::PgPool) {
+        let repo = SqliteStockTradeRepository::new(pool.clone());
         repo.save_trade(NewStockTrade {
             ticker: "AAPL".to_string(),
             trade_type: "BUY".to_string(),

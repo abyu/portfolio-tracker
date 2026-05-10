@@ -9,7 +9,7 @@ pub struct StockTrade {
     pub fees_cents: i64,
     pub amount_cents: i64,
     pub currency: String,
-    pub created_at: String,
+    pub created_at: chrono::DateTime<chrono::Utc>,
 }
 
 #[derive(Debug, sqlx::FromRow, Clone)]

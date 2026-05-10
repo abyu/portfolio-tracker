@@ -1,13 +1,13 @@
--- Add migration script here
+-- create_stock_trades.sql
 CREATE TABLE stock_trades(
-    id INTEGER PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     ticker TEXT NOT NULL,
     trade_type TEXT NOT NULL,
     trade_date TEXT NOT NULL,
-    units REAL NOT NULL,
-    market_price_cents INTEGER NOT NULL,
-    fees_cents INTEGER NOT NULL,
-    amount_cents INTEGER NOT NULL,
+    units DOUBLE PRECISION NOT NULL,
+    market_price_cents BIGINT NOT NULL,
+    fees_cents BIGINT NOT NULL,
+    amount_cents BIGINT NOT NULL,
     currency TEXT NOT NULL DEFAULT 'AUD',
-    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 )

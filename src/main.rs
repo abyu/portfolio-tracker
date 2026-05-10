@@ -4,7 +4,7 @@ mod config;
 use config::AppConfig;
 mod app_state;
 use app_state::AppState;
-use sqlx::sqlite::SqlitePoolOptions;
+use sqlx::postgres::PgPoolOptions;
 mod models;
 mod db;
 mod routes;
@@ -24,7 +24,7 @@ use tokio::time;
 async fn main() {
     let config = AppConfig::load().unwrap();
 
-    let pool = SqlitePoolOptions::new()
+    let pool = PgPoolOptions::new()
         .max_connections(5)
         .connect(config.db_url.as_str())
         .await

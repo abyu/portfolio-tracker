@@ -4,7 +4,7 @@ pub struct StockPrice {
     pub ticker: String,
     pub price_cents: i64,
     pub currency: String,
-    pub fetched_at: String,
+    pub fetched_at: chrono::DateTime<chrono::Utc>,
 }
 
 #[derive(Debug)]

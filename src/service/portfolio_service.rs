@@ -90,7 +90,7 @@ mod test{
     #[tokio::test]
     async fn test_build_portfolio_based_on_ticker_current_price() {
         let prices_repo = MockRepository::new_with_prices(
-            [("VDHG".to_string(), StockPrice{id: 1, ticker: "VDHG".to_string(), price_cents: 3623, currency: "AUD".to_string(), fetched_at:"".to_string()})].into_iter().collect()
+            [("VDHG".to_string(), StockPrice{id: 1, ticker: "VDHG".to_string(), price_cents: 3623, currency: "AUD".to_string(), fetched_at: chrono::Utc::now()})].into_iter().collect()
         );
         let trades_repo = MockRepository::new_with_trades(vec![AggregatedStockTrade{
             ticker: "VDHG".to_string(),
@@ -112,7 +112,7 @@ mod test{
     #[tokio::test]
     async fn test_build_portfolio_skips_tickers_with_no_current_price() {
         let prices_repo = MockRepository::new_with_prices(
-            [("VDHG".to_string(), StockPrice{id: 1, ticker: "VDHG".to_string(), price_cents: 3623, currency: "AUD".to_string(), fetched_at:"".to_string()})].into_iter().collect()
+            [("VDHG".to_string(), StockPrice{id: 1, ticker: "VDHG".to_string(), price_cents: 3623, currency: "AUD".to_string(), fetched_at: chrono::Utc::now()})].into_iter().collect()
         );
         let trades_repo = MockRepository::new_with_trades(vec![AggregatedStockTrade{
             ticker: "VDHG".to_string(),

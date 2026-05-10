@@ -2,29 +2,30 @@ use crate::{models::stock_price::*, service::price_update_service::StockPriceRep
 use async_trait::async_trait;
 
 pub struct SqliteStockPriceRepository {
-    pool: sqlx::SqlitePool,
+    pool: sqlx::PgPool,
 }
 
 
 #[async_trait]
 impl StockPriceRepository for SqliteStockPriceRepository {
     async fn upsert_price(&self, price: NewStockPrice) -> Result<i64, sqlx::Error> {
-        let result = sqlx::query(
-            "INSERT INTO stock_prices (ticker, price_cents, currency) VALUES (?, ?, ?)
+        let result = sqlx::query_scalar(
+            "INSERT INTO stock_prices (ticker, price_cents, currency) VALUES ($1, $2, $3)
                 ON CONFLICT(ticker) DO UPDATE SET 
                 price_cents = excluded.price_cents,
-                fetched_at = datetime('now')"
+                fetched_at = NOW()
+                RETURNING id"
             )
             .bind(price.ticker)
             .bind(price.price_cents)
             .bind(price.currency)
-            .execute(&self.pool)
+            .fetch_one(&self.pool)
             .await?;
-        Ok(result.last_insert_rowid())
+        Ok(result)
     }
 
     async fn get_by_ticker(&self, ticker: &str) -> Result<Option<StockPrice>, sqlx::Error> {
-        let price = sqlx::query_as::<_, StockPrice>("SELECT * FROM stock_prices WHERE ticker = ?")
+        let price = sqlx::query_as::<_, StockPrice>("SELECT * FROM stock_prices WHERE ticker = $1")
             .bind(ticker)
             .fetch_optional(&self.pool)
             .await?;
@@ -33,7 +34,7 @@ impl StockPriceRepository for SqliteStockPriceRepository {
 }
 
 impl SqliteStockPriceRepository {
-    pub fn new(pool: sqlx::SqlitePool) -> Self {
+    pub fn new(pool: sqlx::PgPool) -> Self {
         Self { pool }
     }
 }
@@ -41,42 +42,24 @@ impl SqliteStockPriceRepository {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use sqlx::sqlite::SqlitePoolOptions;
 
-    async fn setup_db() -> sqlx::SqlitePool {
-        let pool = SqlitePoolOptions::new()
-            .connect("sqlite::memory:")
-            .await
-            .unwrap();
-
-        sqlx::migrate!("./migrations")
-            .run(&pool)
-            .await
-            .unwrap();
-
-        pool
-    }
-
-    #[tokio::test]
-    async fn test_get_ticker_price_for_missing_ticker_returns_none() {
-        let pool = setup_db().await;
+    #[sqlx::test(migrations = "./migrations")]
+    async fn test_get_ticker_price_for_missing_ticker_returns_none(pool :sqlx::PgPool) {
         let repo = SqliteStockPriceRepository::new(pool);
         let price = repo.get_by_ticker("VDHG").await.unwrap();
         assert!(price.is_none());
     }
     
-    #[tokio::test]
-    async fn test_get_ticker_price_for_a_ticker() {
-        let pool = setup_db().await;
+    #[sqlx::test(migrations = "./migrations")]
+    async fn test_get_ticker_price_for_a_ticker(pool :sqlx::PgPool) {
         let repo = SqliteStockPriceRepository::new(pool);
         let _ = repo.upsert_price(NewStockPrice { ticker: "VDHG".to_string(), price_cents: 3422, currency: "AUD".to_string()}).await;
         let price = repo.get_by_ticker("VDHG").await.unwrap();
         assert!(price.is_some_and(|v| v.price_cents == 3422 && v.ticker == "VDHG"));
     }
 
-    #[tokio::test]
-    async fn test_upsert_when_price_for_ticker_exists() {
-        let pool = setup_db().await;
+    #[sqlx::test(migrations = "./migrations")]
+    async fn test_upsert_when_price_for_ticker_exists(pool :sqlx::PgPool) {
         let repo = SqliteStockPriceRepository::new(pool);
         let _ = repo.upsert_price(NewStockPrice { ticker: "VDHG".to_string(), price_cents: 3422, currency: "AUD".to_string()}).await;
         let old_price = repo.get_by_ticker("VDHG").await.unwrap();
