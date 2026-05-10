@@ -23,6 +23,14 @@ impl StockTradeRepository for SqliteStockTradeRepository {
 
         Ok(trades)
     }
+
+    async fn get_tickers(&self) -> Result<Vec<String>, sqlx::Error> {
+        let tickers = sqlx::query_scalar("SELECT distinct ticker from stock_trades")
+        .fetch_all(&self.db_pool)
+        .await?;
+
+        Ok(tickers)
+    }
 }
 
 impl SqliteStockTradeRepository {
@@ -35,14 +43,6 @@ impl SqliteStockTradeRepository {
             .fetch_all(&self.db_pool)
             .await?;
         Ok(trades)
-    }
-
-    pub async fn get_tickers(&self) -> Result<Vec<String>, sqlx::Error> {
-        let tickers = sqlx::query_scalar("SELECT distinct ticker from stock_trades")
-        .fetch_all(&self.db_pool)
-        .await?;
-
-        Ok(tickers)
     }
 
     pub async fn save_trade(&self, trade: NewStockTrade) -> Result<i64, sqlx::Error> {

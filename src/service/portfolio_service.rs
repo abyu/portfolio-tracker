@@ -10,6 +10,7 @@ pub struct PortfolioService<S: StockPriceRepository, P: StockTradeRepository>{
 #[async_trait]
 pub trait StockTradeRepository {
     async fn get_aggregated(&self) -> Result<Vec<AggregatedStockTrade>, sqlx::Error>;
+    async fn get_tickers(&self) -> Result<Vec<String>, sqlx::Error>;
 }
 
 impl<S: StockPriceRepository, P: StockTradeRepository> PortfolioService<S, P> {
@@ -79,6 +80,10 @@ mod test{
     impl StockTradeRepository for MockRepository {
         async fn get_aggregated(&self) -> Result<Vec<AggregatedStockTrade>, sqlx::Error> {
             Ok(self.trades.clone())
+        }
+
+        async fn get_tickers(&self) -> Result<Vec<String>, sqlx::Error> {
+            Ok(vec![])
         }
     }
 
