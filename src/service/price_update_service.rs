@@ -1,8 +1,8 @@
-use crate::{db::stock_price_repository::StockPriceRepository, models::stock_price::NewStockPrice};
+use crate::{db::sqlite_stock_price_repository::SqliteStockPriceRepository, models::stock_price::NewStockPrice};
 use yahoo_finance_api::{YahooConnector, YahooError};
 use async_trait::async_trait;
 pub struct PriceUpdateService<T: TickerPriceProvider> {
-    stock_price_repo: StockPriceRepository,
+    stock_price_repo: SqliteStockPriceRepository,
     price_provider: T
 }
 
@@ -12,7 +12,7 @@ pub trait TickerPriceProvider {
 }
 
 impl<T: TickerPriceProvider> PriceUpdateService<T> {
-    pub fn new(repo: StockPriceRepository, api: T) -> Self {
+    pub fn new(repo: SqliteStockPriceRepository, api: T) -> Self {
         Self { stock_price_repo:repo, price_provider: api }
     }
 
@@ -83,8 +83,8 @@ mod test {
     async fn test_update_price_for_ticker_and_persist() {
         let price_provider = MockPriceProvider { price: 34.23 };
         let pool = setup_db().await;
-        let repo = StockPriceRepository::new(pool.clone());
-        let svc = PriceUpdateService::new(StockPriceRepository::new(pool), price_provider);
+        let repo = SqliteStockPriceRepository::new(pool.clone());
+        let svc = PriceUpdateService::new(SqliteStockPriceRepository::new(pool), price_provider);
         
         svc.update_prices(vec!["VDHG".to_string()]).await.unwrap();
         

@@ -1,10 +1,10 @@
 use crate::models::stock_trade::{StockTrade, AggregatedStockTrade, NewStockTrade};
 
-pub struct StockTradeRepository {
+pub struct SqliteStockTradeRepository {
     db_pool: sqlx::SqlitePool
 }
 
-impl StockTradeRepository {
+impl SqliteStockTradeRepository {
     pub fn new(db_pool: sqlx::SqlitePool) -> Self {
         Self { db_pool }
     }
@@ -79,7 +79,7 @@ mod tests {
     #[tokio::test]
     async fn test_get_all_trades_returns_empty() {
         let pool = setup_db().await;
-        let repo = StockTradeRepository::new(pool);
+        let repo = SqliteStockTradeRepository::new(pool);
         let trades = repo.get_all_trades().await.unwrap();
         assert!(trades.is_empty());
     }
@@ -87,7 +87,7 @@ mod tests {
     #[tokio::test]
     async fn test_get_all_trades_returns_records() {
         let pool = setup_db().await;
-        let repo = StockTradeRepository::new(pool);
+        let repo = SqliteStockTradeRepository::new(pool);
         repo.save_trade(NewStockTrade {
             ticker: "AAPL".to_string(),
             trade_type: "BUY".to_string(),
@@ -109,7 +109,7 @@ mod tests {
     #[tokio::test]
     async fn test_get_aggregated_trades() {
         let pool = setup_db().await;
-        let repo = StockTradeRepository::new(pool);
+        let repo = SqliteStockTradeRepository::new(pool);
         repo.save_trade(NewStockTrade {
             ticker: "AAPL".to_string(),
             trade_type: "BUY".to_string(),

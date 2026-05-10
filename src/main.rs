@@ -14,7 +14,7 @@ mod tasks;
 use tasks::price_update_task::PriceUpdateTask;
 
 use crate::service::price_update_service::PriceUpdateService;
-use db::{stock_price_repository::StockPriceRepository, stock_trade_repository::StockTradeRepository};
+use db::{sqlite_stock_price_repository::SqliteStockPriceRepository, sqlite_stock_trade_repository::SqliteStockTradeRepository};
 use yahoo_finance_api::YahooConnector;
 use std::sync::Arc;
 use std::time::Duration;
@@ -35,11 +35,11 @@ async fn main() {
 
     let yahoo = YahooConnector::new().unwrap();
     let price_service = PriceUpdateService::new(
-        StockPriceRepository::new(pool.clone()),
+        SqliteStockPriceRepository::new(pool.clone()),
         yahoo
     );
 
-    let task = PriceUpdateTask::new(price_service, StockTradeRepository::new(pool.clone()));
+    let task = PriceUpdateTask::new(price_service, SqliteStockTradeRepository::new(pool.clone()));
 
     // wrap in Arc so it can be shared across threads
     let task = std::sync::Arc::new(task);

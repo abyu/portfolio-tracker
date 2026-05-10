@@ -1,10 +1,10 @@
 use crate::models::stock_price::*;
 
-pub struct StockPriceRepository {
+pub struct SqliteStockPriceRepository {
     pool: sqlx::SqlitePool,
 }
 
-impl StockPriceRepository {
+impl SqliteStockPriceRepository {
     pub fn new(pool: sqlx::SqlitePool) -> Self {
         Self { pool }
     }
@@ -55,7 +55,7 @@ mod tests {
     #[tokio::test]
     async fn test_get_ticker_price_for_missing_ticker_returns_none() {
         let pool = setup_db().await;
-        let repo = StockPriceRepository::new(pool);
+        let repo = SqliteStockPriceRepository::new(pool);
         let price = repo.get_by_ticker("VDHG").await.unwrap();
         assert!(price.is_none());
     }
@@ -63,7 +63,7 @@ mod tests {
     #[tokio::test]
     async fn test_get_ticker_price_for_a_ticker() {
         let pool = setup_db().await;
-        let repo = StockPriceRepository::new(pool);
+        let repo = SqliteStockPriceRepository::new(pool);
         let _ = repo.upsert_price(NewStockPrice { ticker: "VDHG".to_string(), price_cents: 3422, currency: "AUD".to_string()}).await;
         let price = repo.get_by_ticker("VDHG").await.unwrap();
         assert!(price.is_some_and(|v| v.price_cents == 3422 && v.ticker == "VDHG"));
@@ -72,7 +72,7 @@ mod tests {
     #[tokio::test]
     async fn test_upsert_when_price_for_ticker_exists() {
         let pool = setup_db().await;
-        let repo = StockPriceRepository::new(pool);
+        let repo = SqliteStockPriceRepository::new(pool);
         let _ = repo.upsert_price(NewStockPrice { ticker: "VDHG".to_string(), price_cents: 3422, currency: "AUD".to_string()}).await;
         let old_price = repo.get_by_ticker("VDHG").await.unwrap();
         

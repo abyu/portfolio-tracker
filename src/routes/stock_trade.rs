@@ -1,5 +1,5 @@
 use crate::app_state::AppState;
-use crate::db::{stock_trade_repository::StockTradeRepository, stock_price_repository::StockPriceRepository};
+use crate::db::{sqlite_stock_trade_repository::SqliteStockTradeRepository, sqlite_stock_price_repository::SqliteStockPriceRepository};
 use crate::service::portfolio_service::PortfolioService;
 use axum::extract::State;
 use axum::response::Html;
@@ -7,8 +7,8 @@ use tera::{Value, to_value};
 use std::collections::HashMap;
 
 pub async fn render_all(State(state): State<AppState>) -> Html<String> {
-    let repo = StockTradeRepository::new(state.db.clone());
-    let stock_price_repo = StockPriceRepository::new(state.db.clone());
+    let repo = SqliteStockTradeRepository::new(state.db.clone());
+    let stock_price_repo = SqliteStockPriceRepository::new(state.db.clone());
     let portfolio_service = PortfolioService::new(repo, stock_price_repo);
     let stock_trades = portfolio_service.get_portfolio().await.unwrap();
     let mut ctx = tera::Context::new();

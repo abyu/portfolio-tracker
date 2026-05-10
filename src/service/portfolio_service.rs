@@ -1,15 +1,15 @@
 use std::vec;
 
-use crate::db::{stock_price_repository::StockPriceRepository, stock_trade_repository::StockTradeRepository};
+use crate::db::{sqlite_stock_price_repository::SqliteStockPriceRepository, sqlite_stock_trade_repository::SqliteStockTradeRepository};
 use crate::models::portfolio::Portfolio;
 
 pub struct PortfolioService{
-    stock_trades_repo: StockTradeRepository,
-    stock_prices_repo: StockPriceRepository
+    stock_trades_repo: SqliteStockTradeRepository,
+    stock_prices_repo: SqliteStockPriceRepository
 }
 
 impl PortfolioService {
-    pub fn new(stock_trades: StockTradeRepository, stock_prices: StockPriceRepository) -> Self {
+    pub fn new(stock_trades: SqliteStockTradeRepository, stock_prices: SqliteStockPriceRepository) -> Self {
         Self { stock_trades_repo: stock_trades, stock_prices_repo: stock_prices }
     }
 
