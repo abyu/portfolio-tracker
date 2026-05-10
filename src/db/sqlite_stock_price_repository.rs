@@ -1,7 +1,27 @@
-use crate::models::stock_price::*;
+use crate::{models::stock_price::*, service::price_update_service::StockPriceRepository};
+use async_trait::async_trait;
 
 pub struct SqliteStockPriceRepository {
     pool: sqlx::SqlitePool,
+}
+
+
+#[async_trait]
+impl StockPriceRepository for SqliteStockPriceRepository {
+    async fn upsert_price(&self, price: NewStockPrice) -> Result<i64, sqlx::Error> {
+        let result = sqlx::query(
+            "INSERT INTO stock_prices (ticker, price_cents, currency) VALUES (?, ?, ?)
+                ON CONFLICT(ticker) DO UPDATE SET 
+                price_cents = excluded.price_cents,
+                fetched_at = datetime('now')"
+            )
+            .bind(price.ticker)
+            .bind(price.price_cents)
+            .bind(price.currency)
+            .execute(&self.pool)
+            .await?;
+        Ok(result.last_insert_rowid())
+    }
 }
 
 impl SqliteStockPriceRepository {
@@ -15,21 +35,6 @@ impl SqliteStockPriceRepository {
             .fetch_optional(&self.pool)
             .await?;
         Ok(price)
-    }
-
-    pub async fn upsert_price(&self, price: NewStockPrice) -> Result<i64, sqlx::Error> {
-        let result = sqlx::query(
-            "INSERT INTO stock_prices (ticker, price_cents, currency) VALUES (?, ?, ?)
-                ON CONFLICT(ticker) DO UPDATE SET 
-                price_cents = excluded.price_cents,
-                fetched_at = datetime('now')"
-            )
-            .bind(price.ticker)
-            .bind(price.price_cents)
-            .bind(price.currency)
-            .execute(&self.pool)
-            .await?;
-        Ok(result.last_insert_rowid())
     }
 }
 

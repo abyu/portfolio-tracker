@@ -1,13 +1,13 @@
-use crate::service::price_update_service::{PriceUpdateService, TickerPriceProvider};
+use crate::service::price_update_service::{PriceUpdateService, StockPriceRepository, TickerPriceProvider};
 use crate::db::sqlite_stock_trade_repository::SqliteStockTradeRepository;
 
-pub struct PriceUpdateTask<T: TickerPriceProvider> {
-    price_update_service: PriceUpdateService<T>,
+pub struct PriceUpdateTask<T: TickerPriceProvider, S: StockPriceRepository> {
+    price_update_service: PriceUpdateService<T, S>,
     stocks_repo: SqliteStockTradeRepository
 }
 
-impl<T: TickerPriceProvider> PriceUpdateTask<T> {
-    pub fn new(price_update_service: PriceUpdateService<T>, stocks_repo: SqliteStockTradeRepository) -> Self {
+impl<T: TickerPriceProvider, S: StockPriceRepository> PriceUpdateTask<T, S> {
+    pub fn new(price_update_service: PriceUpdateService<T, S>, stocks_repo: SqliteStockTradeRepository) -> Self {
         Self { price_update_service, stocks_repo }
     }
 
