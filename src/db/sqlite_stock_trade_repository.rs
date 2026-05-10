@@ -1,7 +1,28 @@
-use crate::models::stock_trade::{StockTrade, AggregatedStockTrade, NewStockTrade};
+use crate::{models::stock_trade::{AggregatedStockTrade, NewStockTrade, StockTrade}, service::portfolio_service::StockTradeRepository};
+use async_trait::async_trait;
 
 pub struct SqliteStockTradeRepository {
     db_pool: sqlx::SqlitePool
+}
+
+#[async_trait]
+impl StockTradeRepository for SqliteStockTradeRepository {
+    async fn get_aggregated(&self) -> Result<Vec<AggregatedStockTrade>, sqlx::Error> {
+        let trades = sqlx::query_as::<_, AggregatedStockTrade>(
+            "SELECT
+                ticker,
+                SUM(CASE WHEN trade_type = 'BUY' THEN units ELSE -units END) as total_units,
+                SUM(CASE WHEN trade_type = 'BUY' THEN amount_cents ELSE -amount_cents END) as total_amount_cents,
+                currency
+            FROM stock_trades
+            GROUP BY ticker, currency
+            ORDER BY ticker"
+        )
+        .fetch_all(&self.db_pool)
+        .await?;
+
+        Ok(trades)
+    }
 }
 
 impl SqliteStockTradeRepository {
@@ -22,23 +43,6 @@ impl SqliteStockTradeRepository {
         .await?;
 
         Ok(tickers)
-    }
-
-    pub async fn get_aggregated(&self) -> Result<Vec<AggregatedStockTrade>, sqlx::Error> {
-        let trades = sqlx::query_as::<_, AggregatedStockTrade>(
-            "SELECT
-                ticker,
-                SUM(CASE WHEN trade_type = 'BUY' THEN units ELSE -units END) as total_units,
-                SUM(CASE WHEN trade_type = 'BUY' THEN amount_cents ELSE -amount_cents END) as total_amount_cents,
-                currency
-            FROM stock_trades
-            GROUP BY ticker, currency
-            ORDER BY ticker"
-        )
-        .fetch_all(&self.db_pool)
-        .await?;
-
-        Ok(trades)
     }
 
     pub async fn save_trade(&self, trade: NewStockTrade) -> Result<i64, sqlx::Error> {

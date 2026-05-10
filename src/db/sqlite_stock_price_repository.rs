@@ -22,19 +22,19 @@ impl StockPriceRepository for SqliteStockPriceRepository {
             .await?;
         Ok(result.last_insert_rowid())
     }
-}
 
-impl SqliteStockPriceRepository {
-    pub fn new(pool: sqlx::SqlitePool) -> Self {
-        Self { pool }
-    }
-
-    pub async fn get_by_ticker(&self, ticker: &str) -> Result<Option<StockPrice>, sqlx::Error> {
+    async fn get_by_ticker(&self, ticker: &str) -> Result<Option<StockPrice>, sqlx::Error> {
         let price = sqlx::query_as::<_, StockPrice>("SELECT * FROM stock_prices WHERE ticker = ?")
             .bind(ticker)
             .fetch_optional(&self.pool)
             .await?;
         Ok(price)
+    }
+}
+
+impl SqliteStockPriceRepository {
+    pub fn new(pool: sqlx::SqlitePool) -> Self {
+        Self { pool }
     }
 }
 

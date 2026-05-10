@@ -1,4 +1,4 @@
-use crate::models::stock_price::NewStockPrice;
+use crate::models::stock_price::{NewStockPrice, StockPrice};
 use yahoo_finance_api::{YahooConnector, YahooError};
 use async_trait::async_trait;
 pub struct PriceUpdateService<T: TickerPriceProvider, S: StockPriceRepository> {
@@ -9,6 +9,7 @@ pub struct PriceUpdateService<T: TickerPriceProvider, S: StockPriceRepository> {
 #[async_trait]
 pub trait StockPriceRepository {
     async fn upsert_price(&self, price: NewStockPrice) -> Result<i64, sqlx::Error>;
+    async fn get_by_ticker(&self, ticker: &str) -> Result<Option<StockPrice>, sqlx::Error>;
 }
 
 #[async_trait]
@@ -83,6 +84,10 @@ mod test {
         async fn upsert_price(&self,price: NewStockPrice) ->  Result<i64,sqlx::Error> {
             self.written.lock().unwrap().push(price);
             Ok(1)
+        }
+
+        async fn get_by_ticker(&self, ticker: &str) -> Result<Option<StockPrice>, sqlx::Error> {
+            Ok(None)
         }
     }
 

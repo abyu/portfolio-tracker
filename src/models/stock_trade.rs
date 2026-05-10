@@ -12,7 +12,7 @@ pub struct StockTrade {
     pub created_at: String,
 }
 
-#[derive(Debug, sqlx::FromRow)]
+#[derive(Debug, sqlx::FromRow, Clone)]
 pub struct AggregatedStockTrade {
     pub ticker: String,
     pub total_units: f64,

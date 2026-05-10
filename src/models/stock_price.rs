@@ -1,4 +1,4 @@
-#[derive(Debug, sqlx::FromRow, serde::Serialize)]
+#[derive(Debug, sqlx::FromRow, serde::Serialize, Clone)]
 pub struct StockPrice {
     pub id: i64,
     pub ticker: String,
