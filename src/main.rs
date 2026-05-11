@@ -30,6 +30,12 @@ async fn main() {
         .await
         .unwrap();
 
+    // run migrations on startup
+    sqlx::migrate!("./migrations")
+        .run(&pool)
+        .await
+        .unwrap();
+
     let mut tera = tera::Tera::new("templates/**/*.html").unwrap();
     tera.register_filter("cents_to_dollars", routes::stock_trade::cents_to_dollars_filter);
 
