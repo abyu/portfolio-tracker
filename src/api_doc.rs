@@ -4,6 +4,7 @@ use utoipa::OpenApi;
 #[openapi(
     paths(
         crate::routes::portfolio::get_summary,
+        crate::routes::portfolio::get_holdings,
     ),
     components(
         schemas(

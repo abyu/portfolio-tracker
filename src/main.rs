@@ -9,7 +9,7 @@ mod models;
 mod db;
 mod routes;
 use routes::stock_trade::render_all;
-use routes::portfolio::get_summary;
+use routes::portfolio::{get_summary, get_holdings};
 mod service;
 mod tasks;
 use tasks::price_update_task::PriceUpdateTask;
@@ -80,6 +80,7 @@ async fn main() {
     let app = Router::new()
         .route("/", get(render_all))
         .route("/api/portfolio/summary", get(get_summary))
+        .route("/api/portfolio/holdings", get(get_holdings))
         .merge(SwaggerUi::new("/swagger-ui")
             .url("/api-docs/openapi.json", api_doc::ApiDoc::openapi()))
         .with_state(state);

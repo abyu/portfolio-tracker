@@ -1,6 +1,6 @@
 use crate::db::postgres_stock_price_repository::PostgresStockPriceRepository;
 use crate::db::postgres_stock_trade_repository::PostgresStockTradeRepository;
-use crate::models::portfolio::PortfolioSummary;
+use crate::models::portfolio::{Portfolio, PortfolioSummary};
 use crate::app_state::AppState;
 use crate::service::portfolio_service::PortfolioService;
 use axum::extract::State;
@@ -20,4 +20,20 @@ pub async fn get_summary(State(state): State<AppState>) -> Json<PortfolioSummary
     let svc = PortfolioService::new(trade_repo, price_repo);
     let summary = svc.get_summary().await.unwrap();
     Json(summary)
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/portfolio/holdings",
+    responses(
+        (status = 200, description = "Portfolio holdings", body = Vec<Portfolio>)
+    ),
+    tag = "portfolio"
+)]
+pub async fn get_holdings(State(state): State<AppState>) -> Json<Vec<Portfolio>> {
+    let trade_repo = PostgresStockTradeRepository::new(state.db.clone());
+    let price_repo = PostgresStockPriceRepository::new(state.db.clone());
+    let svc = PortfolioService::new(trade_repo, price_repo);
+    let portfolio = svc.get_portfolio().await.unwrap();
+    Json(portfolio)
 }
