@@ -9,16 +9,20 @@ mod models;
 mod db;
 mod routes;
 use routes::stock_trade::render_all;
+use routes::portfolio::get_summary;
 mod service;
 mod tasks;
 use tasks::price_update_task::PriceUpdateTask;
 
 use crate::service::price_update_service::PriceUpdateService;
-use db::{sqlite_stock_price_repository::SqliteStockPriceRepository, sqlite_stock_trade_repository::SqliteStockTradeRepository};
+use db::{postgres_stock_price_repository::PostgresStockPriceRepository, postgres_stock_trade_repository::PostgresStockTradeRepository};
 use yahoo_finance_api::YahooConnector;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::time;
+mod api_doc;
+use utoipa_swagger_ui::SwaggerUi;
+use utoipa::OpenApi;
 
 #[tokio::main]
 async fn main() {
@@ -41,11 +45,11 @@ async fn main() {
 
     let yahoo = YahooConnector::new().unwrap();
     let price_service = PriceUpdateService::new(
-        SqliteStockPriceRepository::new(pool.clone()),
+        PostgresStockPriceRepository::new(pool.clone()),
         yahoo
     );
 
-    let task = PriceUpdateTask::new(price_service, SqliteStockTradeRepository::new(pool.clone()));
+    let task = PriceUpdateTask::new(price_service, PostgresStockTradeRepository::new(pool.clone()));
 
     // wrap in Arc so it can be shared across threads
     let task = std::sync::Arc::new(task);
@@ -75,6 +79,9 @@ async fn main() {
     };
     let app = Router::new()
         .route("/", get(render_all))
+        .route("/api/portfolio/summary", get(get_summary))
+        .merge(SwaggerUi::new("/swagger-ui")
+            .url("/api-docs/openapi.json", api_doc::ApiDoc::openapi()))
         .with_state(state);
 
     let listener = tokio::net::TcpListener::bind(

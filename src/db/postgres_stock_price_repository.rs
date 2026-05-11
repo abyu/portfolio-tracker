@@ -1,13 +1,13 @@
 use crate::{models::stock_price::*, service::price_update_service::StockPriceRepository};
 use async_trait::async_trait;
 
-pub struct SqliteStockPriceRepository {
+pub struct PostgresStockPriceRepository {
     pool: sqlx::PgPool,
 }
 
 
 #[async_trait]
-impl StockPriceRepository for SqliteStockPriceRepository {
+impl StockPriceRepository for PostgresStockPriceRepository {
     async fn upsert_price(&self, price: NewStockPrice) -> Result<i64, sqlx::Error> {
         let result = sqlx::query_scalar(
             "INSERT INTO stock_prices (ticker, price_cents, currency) VALUES ($1, $2, $3)
@@ -33,7 +33,7 @@ impl StockPriceRepository for SqliteStockPriceRepository {
     }
 }
 
-impl SqliteStockPriceRepository {
+impl PostgresStockPriceRepository {
     pub fn new(pool: sqlx::PgPool) -> Self {
         Self { pool }
     }
@@ -45,14 +45,14 @@ mod tests {
 
     #[sqlx::test(migrations = "./migrations")]
     async fn test_get_ticker_price_for_missing_ticker_returns_none(pool :sqlx::PgPool) {
-        let repo = SqliteStockPriceRepository::new(pool);
+        let repo = PostgresStockPriceRepository::new(pool);
         let price = repo.get_by_ticker("VDHG").await.unwrap();
         assert!(price.is_none());
     }
     
     #[sqlx::test(migrations = "./migrations")]
     async fn test_get_ticker_price_for_a_ticker(pool :sqlx::PgPool) {
-        let repo = SqliteStockPriceRepository::new(pool);
+        let repo = PostgresStockPriceRepository::new(pool);
         let _ = repo.upsert_price(NewStockPrice { ticker: "VDHG".to_string(), price_cents: 3422, currency: "AUD".to_string()}).await;
         let price = repo.get_by_ticker("VDHG").await.unwrap();
         assert!(price.is_some_and(|v| v.price_cents == 3422 && v.ticker == "VDHG"));
@@ -60,7 +60,7 @@ mod tests {
 
     #[sqlx::test(migrations = "./migrations")]
     async fn test_upsert_when_price_for_ticker_exists(pool :sqlx::PgPool) {
-        let repo = SqliteStockPriceRepository::new(pool);
+        let repo = PostgresStockPriceRepository::new(pool);
         let _ = repo.upsert_price(NewStockPrice { ticker: "VDHG".to_string(), price_cents: 3422, currency: "AUD".to_string()}).await;
         let old_price = repo.get_by_ticker("VDHG").await.unwrap();
         

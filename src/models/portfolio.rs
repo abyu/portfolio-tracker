@@ -1,4 +1,6 @@
-#[derive(Debug, serde::Serialize)]
+use utoipa::ToSchema;
+
+#[derive(Debug, serde::Serialize, ToSchema)]
 pub struct Portfolio {
     pub ticker: String,
     pub units: f64,
@@ -8,7 +10,7 @@ pub struct Portfolio {
     pub currency: String 
 }
 
-#[derive(Debug, serde::Serialize)]
+#[derive(Debug, serde::Serialize, ToSchema)]
 pub struct PortfolioSummary {
     pub total_value_price_cents: i64,
     pub total_gain_loss_cents: i64,

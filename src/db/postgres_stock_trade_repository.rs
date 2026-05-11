@@ -1,12 +1,12 @@
 use crate::{models::stock_trade::{AggregatedStockTrade, NewStockTrade, StockTrade}, service::portfolio_service::StockTradeRepository};
 use async_trait::async_trait;
 
-pub struct SqliteStockTradeRepository {
+pub struct PostgresStockTradeRepository {
     db_pool: sqlx::PgPool
 }
 
 #[async_trait]
-impl StockTradeRepository for SqliteStockTradeRepository {
+impl StockTradeRepository for PostgresStockTradeRepository {
     async fn get_aggregated(&self) -> Result<Vec<AggregatedStockTrade>, sqlx::Error> {
         let trades = sqlx::query_as::<_, AggregatedStockTrade>(
             "SELECT
@@ -33,7 +33,7 @@ impl StockTradeRepository for SqliteStockTradeRepository {
     }
 }
 
-impl SqliteStockTradeRepository {
+impl PostgresStockTradeRepository {
     pub fn new(db_pool: sqlx::PgPool) -> Self {
         Self { db_pool }
     }
@@ -67,14 +67,14 @@ mod tests {
 
     #[sqlx::test(migrations = "./migrations")]
     async fn test_get_all_trades_returns_empty(pool :sqlx::PgPool) {
-        let repo = SqliteStockTradeRepository::new(pool.clone());
+        let repo = PostgresStockTradeRepository::new(pool.clone());
         let trades = repo.get_all_trades().await.unwrap();
         assert!(trades.is_empty());
     }
     
     #[sqlx::test(migrations = "./migrations")]
     async fn test_get_all_trades_returns_records(pool :sqlx::PgPool) {
-        let repo = SqliteStockTradeRepository::new(pool.clone());
+        let repo = PostgresStockTradeRepository::new(pool.clone());
         repo.save_trade(NewStockTrade {
             ticker: "AAPL".to_string(),
             trade_type: "BUY".to_string(),
@@ -95,7 +95,7 @@ mod tests {
     
     #[sqlx::test(migrations = "./migrations")]
     async fn test_get_aggregated_trades(pool :sqlx::PgPool) {
-        let repo = SqliteStockTradeRepository::new(pool.clone());
+        let repo = PostgresStockTradeRepository::new(pool.clone());
         repo.save_trade(NewStockTrade {
             ticker: "AAPL".to_string(),
             trade_type: "BUY".to_string(),

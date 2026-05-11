@@ -14,3 +14,5 @@ serde = { version = "1", features = ["derive"] }
 yahoo_finance_api = "2"
 async-trait = "0.1"
 chrono = { version = "0.4", features = ["serde"] }
+utoipa = { version = "4", features = ["axum_extras", "chrono"] }
+utoipa-swagger-ui = { version = "7", features = ["axum"] }
