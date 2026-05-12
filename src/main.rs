@@ -73,8 +73,6 @@ async fn main() {
     });
 
     let state = AppState {
-        db: pool,
-        config: config.clone(),
         portfolio_service
     };
     let app = Router::new()
