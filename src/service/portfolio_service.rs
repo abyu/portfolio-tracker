@@ -1,24 +1,36 @@
+use std::sync::Arc;
+
 use crate::models::{portfolio::Portfolio, portfolio::PortfolioSummary, stock_trade::AggregatedStockTrade};
-use crate::service::price_update_service::StockPriceRepository;
+use crate::service::price_service::{PriceError, PriceService};
 use async_trait::async_trait;
 
-pub struct PortfolioService<S: StockPriceRepository, P: StockTradeRepository>{
+
+#[async_trait]
+pub trait PortfolioServiceTrait: Send + Sync {
+    async fn get_portfolio(&self) -> Result<Vec<Portfolio>, PortfolioError>;
+    async fn get_summary(&self) -> Result<PortfolioSummary, PortfolioError>;
+}
+
+pub struct PortfolioService<P: StockTradeRepository>{
     stock_trades_repo: P,
-    stock_prices_repo: S
+    stock_prices_repo: Arc<dyn PriceService>
 }
 
 #[async_trait]
-pub trait StockTradeRepository {
+pub trait StockTradeRepository: Send + Sync {
     async fn get_aggregated(&self) -> Result<Vec<AggregatedStockTrade>, sqlx::Error>;
     async fn get_tickers(&self) -> Result<Vec<String>, sqlx::Error>;
 }
 
-impl<S: StockPriceRepository, P: StockTradeRepository> PortfolioService<S, P> {
-    pub fn new(stock_trades: P, stock_prices: S) -> Self {
+impl<P: StockTradeRepository> PortfolioService<P> {
+    pub fn new(stock_trades: P, stock_prices: Arc<dyn PriceService>) -> Self {
         Self { stock_trades_repo: stock_trades, stock_prices_repo: stock_prices }
     }
+}
 
-    pub async  fn get_portfolio(&self) -> Result<Vec<Portfolio>, PortfolioError> {
+#[async_trait]
+impl <P: StockTradeRepository> PortfolioServiceTrait for PortfolioService<P> {
+    async fn get_portfolio(&self) -> Result<Vec<Portfolio>, PortfolioError> {
         let trades = self.stock_trades_repo.get_aggregated().await?;
         let mut portfolios = Vec::new();
     
@@ -38,7 +50,7 @@ impl<S: StockPriceRepository, P: StockTradeRepository> PortfolioService<S, P> {
         Ok(portfolios)
     }
 
-    pub async fn get_summary(&self) -> Result<PortfolioSummary, PortfolioError> {
+    async fn get_summary(&self) -> Result<PortfolioSummary, PortfolioError> {
         let portfolio = self.get_portfolio().await?;  
         if portfolio.is_empty() {
             return Ok(PortfolioSummary::empty());
@@ -62,36 +74,43 @@ impl<S: StockPriceRepository, P: StockTradeRepository> PortfolioService<S, P> {
 pub enum PortfolioError{
     #[error("Portfolio DB error: {0}")]
     DBError(#[from] sqlx::Error),
+    #[error("Service error: {0}")]
+    ServiceErro(#[from] PriceError)
 }
 
 #[cfg(test)]
 mod test{
     use std::collections::HashMap;
     use super::*;
-    use crate::models::stock_price::{NewStockPrice, StockPrice};
+    use crate::{models::stock_price::{StockPrice}, service::price_service::PriceError};
 
     struct MockRepository {
         trades: Vec<AggregatedStockTrade>,
-        prices: HashMap<String, StockPrice>
     }
 
     impl MockRepository {
-        fn new_with_trades(trades: Vec<AggregatedStockTrade>) -> Self {
-            Self { trades: trades, prices: HashMap::new() }
+        fn new(trades: Vec<AggregatedStockTrade>) -> Self {
+            Self { trades: trades }
         }
-        
-        fn new_with_prices(prices: HashMap<String, StockPrice>) -> Self {
-            Self {  trades: vec![], prices }
+    }
+
+    struct MockPriceService {
+        prices: HashMap<String, StockPrice>
+    }
+
+    impl MockPriceService {
+        fn new(prices: HashMap<String, StockPrice>) -> Self {
+            Self {  prices }
         }
     }
 
     #[async_trait]
-    impl StockPriceRepository for MockRepository {
-        async fn upsert_price(&self, price: NewStockPrice) -> Result<i64, sqlx::Error> {
-            Ok(1)
-        }
-        async fn get_by_ticker(&self, ticker: &str) -> Result<Option<StockPrice>, sqlx::Error> {
+    impl PriceService for MockPriceService {
+        async fn get_by_ticker(&self, ticker: &str) -> Result<Option<StockPrice>, PriceError> {
             Ok(self.prices.get(ticker).cloned())
+        }
+        async fn update_prices(&self, tickers: Vec<String>) -> Result<(), PriceError> {
+            Ok(())
         }
     }
 
@@ -108,10 +127,10 @@ mod test{
 
     #[tokio::test]
     async fn test_build_portfolio_based_on_ticker_current_price() {
-        let prices_repo = MockRepository::new_with_prices(
+        let prices_repo = Arc::new(MockPriceService::new(
             [("VDHG".to_string(), StockPrice{id: 1, ticker: "VDHG".to_string(), price_cents: 3623, currency: "AUD".to_string(), fetched_at: chrono::Utc::now()})].into_iter().collect()
-        );
-        let trades_repo = MockRepository::new_with_trades(vec![AggregatedStockTrade{
+        ));
+        let trades_repo = MockRepository::new(vec![AggregatedStockTrade{
             ticker: "VDHG".to_string(),
             total_units: 20.0,
             total_amount_cents: 68460,
@@ -130,10 +149,10 @@ mod test{
 
     #[tokio::test]
     async fn test_build_portfolio_skips_tickers_with_no_current_price() {
-        let prices_repo = MockRepository::new_with_prices(
+        let prices_repo = Arc::new(MockPriceService::new(
             [("VDHG".to_string(), StockPrice{id: 1, ticker: "VDHG".to_string(), price_cents: 3623, currency: "AUD".to_string(), fetched_at: chrono::Utc::now()})].into_iter().collect()
-        );
-        let trades_repo = MockRepository::new_with_trades(vec![AggregatedStockTrade{
+        ));
+        let trades_repo = MockRepository::new(vec![AggregatedStockTrade{
             ticker: "VDHG".to_string(),
             total_units: 20.0,
             total_amount_cents: 68460,
@@ -157,10 +176,10 @@ mod test{
 
     #[tokio::test]
     async fn test_empty_portfolio_summary() {
-        let prices_repo = MockRepository::new_with_prices(
+        let prices_repo = Arc::new(MockPriceService::new(
            HashMap::new()
-        );
-        let trades_repo = MockRepository::new_with_trades(vec![AggregatedStockTrade{
+        ));
+        let trades_repo = MockRepository::new(vec![AggregatedStockTrade{
             ticker: "VDHG".to_string(),
             total_units: 20.0,
             total_amount_cents: 68460,
@@ -181,13 +200,13 @@ mod test{
 
     #[tokio::test]
     async fn test_portfolio_summary_from_all_trades() {
-        let prices_repo = MockRepository::new_with_prices(
+        let prices_repo = Arc::new(MockPriceService::new(
            [
             ("VDHG".to_string(), StockPrice{id: 1, ticker: "VDHG".to_string(), price_cents: 6000, currency: "AUD".to_string(), fetched_at: chrono::Utc::now()}),
             ("VAS".to_string(), StockPrice{id: 1, ticker: "VAS".to_string(), price_cents: 5000, currency: "AUD".to_string(), fetched_at: chrono::Utc::now()})
            ].into_iter().collect()
-        );
-        let trades_repo = MockRepository::new_with_trades(vec![AggregatedStockTrade{
+        ));
+        let trades_repo = MockRepository::new(vec![AggregatedStockTrade{
             ticker: "VDHG".to_string(),
             total_units: 20.0,
             total_amount_cents: 80000,

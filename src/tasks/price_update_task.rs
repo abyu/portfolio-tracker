@@ -1,14 +1,16 @@
-use crate::service::portfolio_service::StockTradeRepository;
-use crate::service::price_update_service::{PriceUpdateService, StockPriceRepository, TickerPriceProvider};
+use std::sync::Arc;
 
-pub struct PriceUpdateTask<T: TickerPriceProvider, S: StockPriceRepository, P: StockTradeRepository> {
-    price_update_service: PriceUpdateService<T, S>,
+use crate::service::portfolio_service::StockTradeRepository;
+use crate::service::price_service::PriceService;
+
+pub struct PriceUpdateTask<P: StockTradeRepository> {
+    price_update_service: Arc<dyn PriceService>,
     stocks_repo: P
 }
 
 
-impl<T: TickerPriceProvider, S: StockPriceRepository, P: StockTradeRepository> PriceUpdateTask<T, S, P> {
-    pub fn new(price_update_service: PriceUpdateService<T, S>, stocks_repo: P) -> Self {
+impl<P: StockTradeRepository> PriceUpdateTask<P> {
+    pub fn new(price_update_service: Arc<dyn PriceService>, stocks_repo: P) -> Self {
         Self { price_update_service, stocks_repo }
     }
 
@@ -22,7 +24,7 @@ impl<T: TickerPriceProvider, S: StockPriceRepository, P: StockTradeRepository> P
 #[derive(Debug, thiserror::Error)]
 pub enum PriceTaskError{
     #[error("Update error: {0}")]
-    PriceUpdateError(#[from] crate::service::price_update_service::PriceUpdateError),
+    PriceUpdateError(#[from] crate::service::price_service::PriceError),
     #[error("DB error: {0}")]
     DBError(#[from] sqlx::Error)
 }

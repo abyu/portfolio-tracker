@@ -14,7 +14,9 @@ mod service;
 mod tasks;
 use tasks::price_update_task::PriceUpdateTask;
 
-use crate::service::price_update_service::PriceUpdateService;
+use crate::service::portfolio_service::PortfolioService;
+use crate::service::price_service::PriceService;
+use crate::service::ticker_price_service::TickerPriceService;
 use db::{postgres_stock_price_repository::PostgresStockPriceRepository, postgres_stock_trade_repository::PostgresStockTradeRepository};
 use yahoo_finance_api::YahooConnector;
 use std::sync::Arc;
@@ -44,12 +46,14 @@ async fn main() {
     tera.register_filter("cents_to_dollars", routes::stock_trade::cents_to_dollars_filter);
 
     let yahoo = YahooConnector::new().unwrap();
-    let price_service = PriceUpdateService::new(
+    let price_service = Arc::new(TickerPriceService::new(
         PostgresStockPriceRepository::new(pool.clone()),
         yahoo
-    );
+    ));
+    let trade_repo = PostgresStockTradeRepository::new(pool.clone());
+    let portfolio_service = Arc::new(PortfolioService::new(trade_repo, Arc::clone(&price_service) as Arc<dyn PriceService>));
 
-    let task = PriceUpdateTask::new(price_service, PostgresStockTradeRepository::new(pool.clone()));
+    let task = PriceUpdateTask::new(Arc::clone(&price_service) as Arc<dyn PriceService>, PostgresStockTradeRepository::new(pool.clone()));
 
     // wrap in Arc so it can be shared across threads
     let task = std::sync::Arc::new(task);
@@ -76,6 +80,7 @@ async fn main() {
         db: pool,
         config: config.clone(),
         tera,
+        portfolio_service
     };
     let app = Router::new()
         .route("/", get(render_all))

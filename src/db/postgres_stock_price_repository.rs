@@ -1,4 +1,4 @@
-use crate::{models::stock_price::*, service::price_update_service::StockPriceRepository};
+use crate::{models::stock_price::*, service::ticker_price_service::StockPriceRepository};
 use async_trait::async_trait;
 
 pub struct PostgresStockPriceRepository {

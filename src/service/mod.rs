@@ -1,2 +1,3 @@
-pub mod price_update_service;
+pub mod ticker_price_service;
 pub mod portfolio_service;
+pub mod price_service;

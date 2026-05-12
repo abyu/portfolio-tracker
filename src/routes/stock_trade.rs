@@ -1,16 +1,12 @@
 use crate::app_state::AppState;
-use crate::db::{postgres_stock_trade_repository::PostgresStockTradeRepository, postgres_stock_price_repository::PostgresStockPriceRepository};
-use crate::service::portfolio_service::PortfolioService;
 use axum::extract::State;
 use axum::response::Html;
 use tera::{Value, to_value};
 use std::collections::HashMap;
 
 pub async fn render_all(State(state): State<AppState>) -> Html<String> {
-    let repo = PostgresStockTradeRepository::new(state.db.clone());
-    let stock_price_repo = PostgresStockPriceRepository::new(state.db.clone());
-    let portfolio_service = PortfolioService::new(repo, stock_price_repo);
-    let stock_trades = portfolio_service.get_portfolio().await.unwrap();
+    let svc = state.portfolio_service.clone();
+    let stock_trades = svc.get_portfolio().await.unwrap();
     let mut ctx = tera::Context::new();
     ctx.insert("trades", &stock_trades);
     Html(state.tera.render("index.html", &ctx).unwrap())
