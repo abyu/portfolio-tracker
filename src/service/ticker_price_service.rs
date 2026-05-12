@@ -2,7 +2,7 @@ use crate::models::stock_price::{NewStockPrice, StockPrice};
 use crate::service::price_service::{PriceError, PriceService};
 use async_trait::async_trait;
 use chrono::Utc;
-use yahoo_finance_api::{YahooConnector, YahooError};
+use yahoo_finance_api::YahooConnector;
 pub struct TickerPriceService<T: TickerPriceProvider, S: StockPriceRepository> {
     stock_price_repo: S,
     price_provider: T,

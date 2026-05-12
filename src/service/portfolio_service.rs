@@ -11,9 +11,9 @@ pub trait PortfolioServiceTrait: Send + Sync {
     async fn get_summary(&self) -> Result<PortfolioSummary, PortfolioError>;
 }
 
-pub struct PortfolioService<P: StockTradeRepository>{
-    stock_trades_repo: P,
-    stock_prices_repo: Arc<dyn PriceService>
+pub struct PortfolioService<S: StockTradeRepository>{
+    stock_trades_repo: S,
+    price_service: Arc<dyn PriceService>
 }
 
 #[async_trait]
@@ -22,9 +22,9 @@ pub trait StockTradeRepository: Send + Sync {
     async fn get_tickers(&self) -> Result<Vec<String>, sqlx::Error>;
 }
 
-impl<P: StockTradeRepository> PortfolioService<P> {
-    pub fn new(stock_trades: P, stock_prices: Arc<dyn PriceService>) -> Self {
-        Self { stock_trades_repo: stock_trades, stock_prices_repo: stock_prices }
+impl<S: StockTradeRepository> PortfolioService<S> {
+    pub fn new(stock_trades: S, stock_prices: Arc<dyn PriceService>) -> Self {
+        Self { stock_trades_repo: stock_trades, price_service: stock_prices }
     }
 }
 
@@ -35,7 +35,7 @@ impl <P: StockTradeRepository> PortfolioServiceTrait for PortfolioService<P> {
         let mut portfolios = Vec::new();
     
         for trade in trades {
-            if let Some(price) = self.stock_prices_repo.get_by_ticker(&trade.ticker).await? {
+            if let Some(price) = self.price_service.get_by_ticker(&trade.ticker).await? {
                 let total_value_cents = (trade.total_units * price.price_cents as f64).round() as i64;
                 portfolios.push(Portfolio {
                     ticker: trade.ticker,
