@@ -8,7 +8,6 @@ use sqlx::postgres::PgPoolOptions;
 mod models;
 mod db;
 mod routes;
-use routes::stock_trade::render_all;
 use routes::portfolio::{get_summary, get_holdings};
 mod service;
 mod tasks;
@@ -41,9 +40,6 @@ async fn main() {
         .run(&pool)
         .await
         .unwrap();
-
-    let mut tera = tera::Tera::new("templates/**/*.html").unwrap();
-    tera.register_filter("cents_to_dollars", routes::stock_trade::cents_to_dollars_filter);
 
     let yahoo = YahooConnector::new().unwrap();
     let price_service = Arc::new(TickerPriceService::new(
@@ -79,11 +75,9 @@ async fn main() {
     let state = AppState {
         db: pool,
         config: config.clone(),
-        tera,
         portfolio_service
     };
     let app = Router::new()
-        .route("/", get(render_all))
         .route("/api/portfolio/summary", get(get_summary))
         .route("/api/portfolio/holdings", get(get_holdings))
         .merge(SwaggerUi::new("/swagger-ui")
