@@ -1,8 +1,11 @@
 use std::sync::Arc;
 
-use crate::service::portfolio_service::PortfolioServiceTrait;
+use sqlx::PgPool;
+
+use crate::service::price_service::PriceService;
 
 #[derive(Clone)]
 pub struct AppState {
-    pub portfolio_service: Arc<dyn PortfolioServiceTrait + Send + Sync>
+    pub db: PgPool,
+    pub price_service: Arc<dyn PriceService>,
 }

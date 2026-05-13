@@ -134,7 +134,8 @@ mod test{
             ticker: "VDHG".to_string(),
             total_units: 20.0,
             total_amount_cents: 68460,
-            currency: "AUD".to_string()
+            currency: "AUD".to_string(),
+            user_id: 1,
         }]);
         let svc = PortfolioService::new(trades_repo, prices_repo);
 
@@ -156,12 +157,14 @@ mod test{
             ticker: "VDHG".to_string(),
             total_units: 20.0,
             total_amount_cents: 68460,
-            currency: "AUD".to_string()
+            currency: "AUD".to_string(),
+            user_id: 1,
         }, AggregatedStockTrade{
             ticker: "VAS".to_string(),
             total_units: 20.0,
             total_amount_cents: 68460,
-            currency: "AUD".to_string()
+            currency: "AUD".to_string(),
+            user_id: 1,
         }]);
         let svc = PortfolioService::new(trades_repo, prices_repo);
 
@@ -183,12 +186,14 @@ mod test{
             ticker: "VDHG".to_string(),
             total_units: 20.0,
             total_amount_cents: 68460,
-            currency: "AUD".to_string()
+            currency: "AUD".to_string(),
+            user_id: 1,
         }, AggregatedStockTrade{
             ticker: "VAS".to_string(),
             total_units: 20.0,
             total_amount_cents: 68460,
-            currency: "AUD".to_string()
+            currency: "AUD".to_string(),
+            user_id: 1,
         }]);
         let svc = PortfolioService::new(trades_repo, prices_repo);
 
@@ -210,12 +215,14 @@ mod test{
             ticker: "VDHG".to_string(),
             total_units: 20.0,
             total_amount_cents: 80000,
-            currency: "AUD".to_string()
+            currency: "AUD".to_string(),
+            user_id: 1,
         }, AggregatedStockTrade{
             ticker: "VAS".to_string(),
             total_units: 10.0,
             total_amount_cents: 60000,
-            currency: "AUD".to_string()
+            currency: "AUD".to_string(),
+            user_id: 1,
         }]);
         let svc = PortfolioService::new(trades_repo, prices_repo);
 

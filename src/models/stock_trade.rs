@@ -10,6 +10,7 @@ pub struct StockTrade {
     pub amount_cents: i64,
     pub currency: String,
     pub created_at: chrono::DateTime<chrono::Utc>,
+    pub user_id: i64
 }
 
 #[derive(Debug, sqlx::FromRow, Clone)]
@@ -17,7 +18,8 @@ pub struct AggregatedStockTrade {
     pub ticker: String,
     pub total_units: f64,
     pub total_amount_cents: i64,
-    pub currency: String
+    pub currency: String,
+    pub user_id: i64
 }
 
 #[derive(Debug)]
@@ -30,4 +32,5 @@ pub struct NewStockTrade {
     pub fees_cents: i64,
     pub amount_cents: i64,
     pub currency: String,
+    pub user_id: i64
 }

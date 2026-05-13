@@ -46,16 +46,14 @@ async fn main() {
         PostgresStockPriceRepository::new(pool.clone()),
         yahoo
     ));
-    let trade_repo = PostgresStockTradeRepository::new(pool.clone());
-    let portfolio_service = Arc::new(PortfolioService::new(trade_repo, Arc::clone(&price_service) as Arc<dyn PriceService>));
 
-    let task = PriceUpdateTask::new(Arc::clone(&price_service) as Arc<dyn PriceService>, PostgresStockTradeRepository::new(pool.clone()));
+    let task = PriceUpdateTask::new(Arc::clone(&price_service) as Arc<dyn PriceService>, PostgresStockTradeRepository::new(pool.clone(), 1));
 
     // wrap in Arc so it can be shared across threads
     let task = std::sync::Arc::new(task);
     let task_clone = Arc::clone(&task);
 
-    // spawn background job
+    // spawn background jobs
     tokio::spawn(async move {
         // initial run at startup
         if let Err(e) = task_clone.start().await {
@@ -73,7 +71,8 @@ async fn main() {
     });
 
     let state = AppState {
-        portfolio_service
+        db: pool,
+        price_service: price_service,
     };
     let app = Router::new()
         .route("/api/portfolio/summary", get(get_summary))
