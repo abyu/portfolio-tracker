@@ -11,25 +11,25 @@ pub trait PortfolioServiceTrait: Send + Sync {
     async fn get_summary(&self) -> Result<PortfolioSummary, PortfolioError>;
 }
 
-pub struct PortfolioService<S: StockTradeRepository>{
+pub struct PortfolioService<S: UserStockTradeRepository>{
     stock_trades_repo: S,
     price_service: Arc<dyn PriceService>
 }
 
 #[async_trait]
-pub trait StockTradeRepository: Send + Sync {
+pub trait UserStockTradeRepository: Send + Sync {
     async fn get_aggregated(&self) -> Result<Vec<AggregatedStockTrade>, sqlx::Error>;
     async fn get_tickers(&self) -> Result<Vec<String>, sqlx::Error>;
 }
 
-impl<S: StockTradeRepository> PortfolioService<S> {
+impl<S: UserStockTradeRepository> PortfolioService<S> {
     pub fn new(stock_trades: S, stock_prices: Arc<dyn PriceService>) -> Self {
         Self { stock_trades_repo: stock_trades, price_service: stock_prices }
     }
 }
 
 #[async_trait]
-impl <P: StockTradeRepository> PortfolioServiceTrait for PortfolioService<P> {
+impl <P: UserStockTradeRepository> PortfolioServiceTrait for PortfolioService<P> {
     async fn get_portfolio(&self) -> Result<Vec<Portfolio>, PortfolioError> {
         let trades = self.stock_trades_repo.get_aggregated().await?;
         let mut portfolios = Vec::new();
@@ -115,7 +115,7 @@ mod test{
     }
 
     #[async_trait]
-    impl StockTradeRepository for MockRepository {
+    impl UserStockTradeRepository for MockRepository {
         async fn get_aggregated(&self) -> Result<Vec<AggregatedStockTrade>, sqlx::Error> {
             Ok(self.trades.clone())
         }

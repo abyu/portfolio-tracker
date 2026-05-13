@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::db::postgres_stock_trade_repository::PostgresStockTradeRepository;
+use crate::db::postgres_user_stock_trade_repository::PostgresUserStockTradeRepository;
 use crate::models::portfolio::{Portfolio, PortfolioSummary};
 use crate::app_state::AppState;
 use crate::service::portfolio_service::{PortfolioService, PortfolioServiceTrait};
@@ -46,8 +46,8 @@ fn extract_user_id(headers: HeaderMap) -> Result<i64, AppError> {
         .ok_or(AppError::MissingUserId)
 }
 
-fn build_portfolio_service(state: &AppState, user_id: i64) -> PortfolioService<PostgresStockTradeRepository> {
-    let trade_repo = PostgresStockTradeRepository::new(state.db.clone(), user_id);
+fn build_portfolio_service(state: &AppState, user_id: i64) -> PortfolioService<PostgresUserStockTradeRepository> {
+    let trade_repo = PostgresUserStockTradeRepository::new(state.db.clone(), user_id);
     PortfolioService::new(trade_repo, Arc::clone(&state.price_service))
 }
 

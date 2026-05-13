@@ -1,13 +1,13 @@
-use crate::{models::stock_trade::{AggregatedStockTrade, NewStockTrade, StockTrade}, service::portfolio_service::StockTradeRepository};
+use crate::{models::stock_trade::{AggregatedStockTrade, NewStockTrade, StockTrade}, service::portfolio_service::UserStockTradeRepository};
 use async_trait::async_trait;
 
-pub struct PostgresStockTradeRepository {
+pub struct PostgresUserStockTradeRepository {
     db_pool: sqlx::PgPool,
     user_id: i64,
 }
 
 #[async_trait]
-impl StockTradeRepository for PostgresStockTradeRepository {
+impl UserStockTradeRepository for PostgresUserStockTradeRepository {
     async fn get_aggregated(&self) -> Result<Vec<AggregatedStockTrade>, sqlx::Error> {
         let trades = sqlx::query_as::<_, AggregatedStockTrade>(
             "SELECT
@@ -37,7 +37,7 @@ impl StockTradeRepository for PostgresStockTradeRepository {
     }
 }
 
-impl PostgresStockTradeRepository {
+impl PostgresUserStockTradeRepository {
     pub fn new(db_pool: sqlx::PgPool, user_id: i64) -> Self {
         Self { db_pool, user_id }
     }
@@ -73,14 +73,14 @@ mod tests {
 
     #[sqlx::test(migrations = "./migrations")]
     async fn test_get_all_trades_returns_empty(pool :sqlx::PgPool) {
-        let repo = PostgresStockTradeRepository::new(pool.clone(), 1);
+        let repo = PostgresUserStockTradeRepository::new(pool.clone(), 1);
         let trades = repo.get_all_trades().await.unwrap();
         assert!(trades.is_empty());
     }
     
     #[sqlx::test(migrations = "./migrations")]
     async fn test_get_all_trades_returns_records(pool :sqlx::PgPool) {
-        let repo = PostgresStockTradeRepository::new(pool.clone(), 1);
+        let repo = PostgresUserStockTradeRepository::new(pool.clone(), 1);
         repo.save_trade(NewStockTrade {
             ticker: "AAPL".to_string(),
             trade_type: "BUY".to_string(),
@@ -102,7 +102,7 @@ mod tests {
     
     #[sqlx::test(migrations = "./migrations")]
     async fn test_get_aggregated_trades(pool :sqlx::PgPool) {
-        let repo = PostgresStockTradeRepository::new(pool.clone(), 1);
+        let repo = PostgresUserStockTradeRepository::new(pool.clone(), 1);
         repo.save_trade(NewStockTrade {
             ticker: "AAPL".to_string(),
             trade_type: "BUY".to_string(),

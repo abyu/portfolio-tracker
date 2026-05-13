@@ -1,15 +1,15 @@
 use std::sync::Arc;
 
-use crate::service::portfolio_service::StockTradeRepository;
+use crate::service::portfolio_service::UserStockTradeRepository;
 use crate::service::price_service::PriceService;
 
-pub struct PriceUpdateTask<P: StockTradeRepository> {
+pub struct PriceUpdateTask<P: UserStockTradeRepository> {
     price_update_service: Arc<dyn PriceService>,
     stocks_repo: P
 }
 
 
-impl<P: StockTradeRepository> PriceUpdateTask<P> {
+impl<P: UserStockTradeRepository> PriceUpdateTask<P> {
     pub fn new(price_update_service: Arc<dyn PriceService>, stocks_repo: P) -> Self {
         Self { price_update_service, stocks_repo }
     }

@@ -1,2 +1,2 @@
-pub mod postgres_stock_trade_repository;
+pub mod postgres_user_stock_trade_repository;
 pub mod postgres_stock_price_repository;
