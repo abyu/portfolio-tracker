@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use crate::models::stock_trade::{NewStockTrade, StockTrade};
 use crate::models::{portfolio::Portfolio, portfolio::PortfolioSummary, stock_trade::AggregatedStockTrade};
 use crate::service::price_service::{PriceError, PriceService};
 use async_trait::async_trait;
@@ -19,7 +20,8 @@ pub struct PortfolioService<S: UserStockTradeRepository>{
 #[async_trait]
 pub trait UserStockTradeRepository: Send + Sync {
     async fn get_aggregated(&self) -> Result<Vec<AggregatedStockTrade>, sqlx::Error>;
-    async fn get_tickers(&self) -> Result<Vec<String>, sqlx::Error>;
+    async fn get_all_trades(&self) -> Result<Vec<StockTrade>, sqlx::Error>;
+    async fn save_trade(&self, trade: NewStockTrade) -> Result<i64, sqlx::Error>;
 }
 
 impl<S: UserStockTradeRepository> PortfolioService<S> {
@@ -120,8 +122,12 @@ mod test{
             Ok(self.trades.clone())
         }
 
-        async fn get_tickers(&self) -> Result<Vec<String>, sqlx::Error> {
+        async fn get_all_trades(&self) -> Result<Vec<StockTrade>, sqlx::Error> {
             Ok(vec![])
+        }
+
+        async fn save_trade(&self, trade: NewStockTrade) -> Result<i64, sqlx::Error> {
+            Ok(1)
         }
     }
 
@@ -135,7 +141,6 @@ mod test{
             total_units: 20.0,
             total_amount_cents: 68460,
             currency: "AUD".to_string(),
-            user_id: 1,
         }]);
         let svc = PortfolioService::new(trades_repo, prices_repo);
 
@@ -158,13 +163,11 @@ mod test{
             total_units: 20.0,
             total_amount_cents: 68460,
             currency: "AUD".to_string(),
-            user_id: 1,
         }, AggregatedStockTrade{
             ticker: "VAS".to_string(),
             total_units: 20.0,
             total_amount_cents: 68460,
             currency: "AUD".to_string(),
-            user_id: 1,
         }]);
         let svc = PortfolioService::new(trades_repo, prices_repo);
 
@@ -187,13 +190,11 @@ mod test{
             total_units: 20.0,
             total_amount_cents: 68460,
             currency: "AUD".to_string(),
-            user_id: 1,
         }, AggregatedStockTrade{
             ticker: "VAS".to_string(),
             total_units: 20.0,
             total_amount_cents: 68460,
             currency: "AUD".to_string(),
-            user_id: 1,
         }]);
         let svc = PortfolioService::new(trades_repo, prices_repo);
 
@@ -216,13 +217,11 @@ mod test{
             total_units: 20.0,
             total_amount_cents: 80000,
             currency: "AUD".to_string(),
-            user_id: 1,
         }, AggregatedStockTrade{
             ticker: "VAS".to_string(),
             total_units: 10.0,
             total_amount_cents: 60000,
             currency: "AUD".to_string(),
-            user_id: 1,
         }]);
         let svc = PortfolioService::new(trades_repo, prices_repo);
 

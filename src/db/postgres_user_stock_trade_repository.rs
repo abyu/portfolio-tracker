@@ -27,22 +27,7 @@ impl UserStockTradeRepository for PostgresUserStockTradeRepository {
         Ok(trades)
     }
 
-    async fn get_tickers(&self) -> Result<Vec<String>, sqlx::Error> {
-        let tickers = sqlx::query_scalar("SELECT distinct ticker from stock_trades where user_id=$1")
-        .bind(self.user_id)
-        .fetch_all(&self.db_pool)
-        .await?;
-
-        Ok(tickers)
-    }
-}
-
-impl PostgresUserStockTradeRepository {
-    pub fn new(db_pool: sqlx::PgPool, user_id: i64) -> Self {
-        Self { db_pool, user_id }
-    }
-
-    pub async fn get_all_trades(&self) -> Result<Vec<StockTrade>, sqlx::Error> {
+    async fn get_all_trades(&self) -> Result<Vec<StockTrade>, sqlx::Error> {
         let trades = sqlx::query_as::<_, StockTrade>("SELECT * FROM stock_trades WHERE user_id = $1")
             .bind(self.user_id)
             .fetch_all(&self.db_pool)
@@ -50,7 +35,7 @@ impl PostgresUserStockTradeRepository {
         Ok(trades)
     }
 
-    pub async fn save_trade(&self, trade: NewStockTrade) -> Result<i64, sqlx::Error> {
+    async fn save_trade(&self, trade: NewStockTrade) -> Result<i64, sqlx::Error> {
         let result = sqlx::query_scalar("INSERT INTO stock_trades (ticker, trade_type, trade_date, units, market_price_cents, fees_cents, amount_cents, currency, user_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id")
             .bind(trade.ticker)
             .bind(trade.trade_type)
@@ -67,20 +52,39 @@ impl PostgresUserStockTradeRepository {
     }
 }
 
+impl PostgresUserStockTradeRepository {
+    pub fn new(db_pool: sqlx::PgPool, user_id: i64) -> Self {
+        Self { db_pool, user_id }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
+    async fn create_test_user(pool: &sqlx::PgPool) -> i64 {
+        sqlx::query_scalar(
+            "INSERT INTO users (email, display_name) VALUES ($1, $2) RETURNING id"
+        )
+        .bind("test@example.com")
+        .bind("Test User")
+        .fetch_one(pool)
+        .await
+        .unwrap()
+    }
+
     #[sqlx::test(migrations = "./migrations")]
     async fn test_get_all_trades_returns_empty(pool :sqlx::PgPool) {
-        let repo = PostgresUserStockTradeRepository::new(pool.clone(), 1);
+        let user_id = create_test_user(&pool).await;
+        let repo = PostgresUserStockTradeRepository::new(pool.clone(), user_id);
         let trades = repo.get_all_trades().await.unwrap();
         assert!(trades.is_empty());
     }
     
     #[sqlx::test(migrations = "./migrations")]
     async fn test_get_all_trades_returns_records(pool :sqlx::PgPool) {
-        let repo = PostgresUserStockTradeRepository::new(pool.clone(), 1);
+        let user_id = create_test_user(&pool).await;
+        let repo = PostgresUserStockTradeRepository::new(pool.clone(), user_id);
         repo.save_trade(NewStockTrade {
             ticker: "AAPL".to_string(),
             trade_type: "BUY".to_string(),
@@ -89,8 +93,7 @@ mod tests {
             market_price_cents: 15000,
             fees_cents: 100,
             amount_cents: 150000,
-            currency: "USD".to_string(),
-            user_id: 1
+            currency: "USD".to_string()
         }).await.unwrap();
         let trades = repo.get_all_trades().await.unwrap();
 
@@ -102,7 +105,8 @@ mod tests {
     
     #[sqlx::test(migrations = "./migrations")]
     async fn test_get_aggregated_trades(pool :sqlx::PgPool) {
-        let repo = PostgresUserStockTradeRepository::new(pool.clone(), 1);
+        let user_id = create_test_user(&pool).await;
+        let repo = PostgresUserStockTradeRepository::new(pool.clone(), user_id);
         repo.save_trade(NewStockTrade {
             ticker: "AAPL".to_string(),
             trade_type: "BUY".to_string(),
@@ -112,7 +116,6 @@ mod tests {
             fees_cents: 100,
             amount_cents: 150000,
             currency: "USD".to_string(),
-            user_id: 1
         }).await.unwrap();
         repo.save_trade(NewStockTrade {
             ticker: "AAPL".to_string(),
@@ -123,7 +126,6 @@ mod tests {
             fees_cents: 100,
             amount_cents: 160000,
             currency: "USD".to_string(),
-            user_id: 1
         }).await.unwrap();
         repo.save_trade(NewStockTrade {
             ticker: "AAPL".to_string(),
@@ -134,7 +136,6 @@ mod tests {
             fees_cents: 100,
             amount_cents: 190000,
             currency: "USD".to_string(),
-            user_id: 1
         }).await.unwrap();
         repo.save_trade(NewStockTrade {
             ticker: "GOOG".to_string(),
@@ -145,7 +146,6 @@ mod tests {
             fees_cents: 100,
             amount_cents: 100000,
             currency: "USD".to_string(),
-            user_id: 1
         }).await.unwrap();
         let trades = repo.get_aggregated().await.unwrap();
 

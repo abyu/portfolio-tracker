@@ -19,7 +19,6 @@ pub struct AggregatedStockTrade {
     pub total_units: f64,
     pub total_amount_cents: i64,
     pub currency: String,
-    pub user_id: i64
 }
 
 #[derive(Debug)]
@@ -32,5 +31,4 @@ pub struct NewStockTrade {
     pub fees_cents: i64,
     pub amount_cents: i64,
     pub currency: String,
-    pub user_id: i64
 }

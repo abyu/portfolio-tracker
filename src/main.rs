@@ -13,10 +13,10 @@ mod service;
 mod tasks;
 use tasks::price_update_task::PriceUpdateTask;
 
-use crate::service::portfolio_service::PortfolioService;
+use crate::db::postgres_stock_trade_repository::PostgresStockTradeRepository;
 use crate::service::price_service::PriceService;
 use crate::service::ticker_price_service::TickerPriceService;
-use db::{postgres_stock_price_repository::PostgresStockPriceRepository, postgres_user_stock_trade_repository::PostgresUserStockTradeRepository};
+use db::postgres_stock_price_repository::PostgresStockPriceRepository;
 use yahoo_finance_api::YahooConnector;
 use std::sync::Arc;
 use std::time::Duration;
@@ -46,8 +46,9 @@ async fn main() {
         PostgresStockPriceRepository::new(pool.clone()),
         yahoo
     ));
+    let stock_repo = PostgresStockTradeRepository::new(pool.clone());
 
-    let task = PriceUpdateTask::new(Arc::clone(&price_service) as Arc<dyn PriceService>, PostgresUserStockTradeRepository::new(pool.clone(), 1));
+    let task = PriceUpdateTask::new(Arc::clone(&price_service) as Arc<dyn PriceService>, stock_repo);
 
     // wrap in Arc so it can be shared across threads
     let task = std::sync::Arc::new(task);

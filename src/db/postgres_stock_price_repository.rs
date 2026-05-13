@@ -5,7 +5,6 @@ pub struct PostgresStockPriceRepository {
     pool: sqlx::PgPool,
 }
 
-
 #[async_trait]
 impl StockPriceRepository for PostgresStockPriceRepository {
     async fn upsert_price(&self, price: NewStockPrice) -> Result<i64, sqlx::Error> {
