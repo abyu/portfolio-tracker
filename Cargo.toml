@@ -16,3 +16,5 @@ chrono = { version = "0.4", features = ["serde"] }
 utoipa = { version = "4", features = ["axum_extras", "chrono"] }
 utoipa-swagger-ui = { version = "7", features = ["axum"] }
 csv = "1"
+argon2 = "0.5"
+jsonwebtoken = "9"
