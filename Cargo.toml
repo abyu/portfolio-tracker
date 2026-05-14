@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-axum = "0.7"
+axum = { version = "0.7", features = ["multipart"] }
 tokio = { version = "1", features = ["full"] }
 dotenvy = "0.15"
 sqlx = { version = "0.7", features = ["postgres", "runtime-tokio", "migrate", "chrono", "macros"] }
@@ -15,3 +15,4 @@ async-trait = "0.1"
 chrono = { version = "0.4", features = ["serde"] }
 utoipa = { version = "4", features = ["axum_extras", "chrono"] }
 utoipa-swagger-ui = { version = "7", features = ["axum"] }
+csv = "1"

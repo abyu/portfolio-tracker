@@ -1,3 +1,4 @@
+use axum::routing::post;
 use axum::{routing::get, Router};
 
 mod config;
@@ -9,6 +10,7 @@ mod models;
 mod db;
 mod routes;
 use routes::portfolio::{get_summary, get_holdings};
+use routes::import::import_csv;
 mod service;
 mod tasks;
 use tasks::price_update_task::PriceUpdateTask;
@@ -24,6 +26,7 @@ use tokio::time;
 mod api_doc;
 use utoipa_swagger_ui::SwaggerUi;
 use utoipa::OpenApi;
+mod import;
 
 #[tokio::main]
 async fn main() {
@@ -78,6 +81,7 @@ async fn main() {
     let app = Router::new()
         .route("/api/portfolio/summary", get(get_summary))
         .route("/api/portfolio/holdings", get(get_holdings))
+        .route("/api/trades/import", post(import_csv))
         .merge(SwaggerUi::new("/swagger-ui")
             .url("/api-docs/openapi.json", api_doc::ApiDoc::openapi()))
         .with_state(state);
