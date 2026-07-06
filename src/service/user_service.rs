@@ -7,17 +7,25 @@ pub struct UserService<U: UserRepository> {
 }
 
 #[async_trait::async_trait]
-pub trait UserRepository {
-    async fn get_by_user_name(&self, user_name: String) -> Result<Option<User>, sqlx::Error>;
+pub trait UserRepository:  Send + Sync{
+    async fn get_by_user_name(&self, email: String) -> Result<Option<User>, sqlx::Error>;
+}
+
+#[async_trait::async_trait]
+pub trait UserServiceTrait: Send + Sync {
+    async fn validate_credentials(&self, email: String, password: String) -> Result<User, AuthenticationError>;
 }
 
 impl<U: UserRepository> UserService<U> {
     pub fn new(repo: U) -> Self {
         Self { repo }
     }
+}
 
-    pub async fn validate_credentials(&self, user_name: String, password: String) -> Result<User, AuthenticationError> {
-        let user = self.repo.get_by_user_name(user_name).await?.ok_or(AuthenticationError::InvalidCredentials)?;
+#[async_trait::async_trait]
+impl<U: UserRepository> UserServiceTrait for UserService<U> {
+    async fn validate_credentials(&self, email: String, password: String) -> Result<User, AuthenticationError> {
+        let user = self.repo.get_by_user_name(email).await?.ok_or(AuthenticationError::InvalidCredentials)?;
         
         let user_creds = user.auth.as_ref()
             .ok_or(AuthenticationError::InvalidCredentials)?
@@ -53,8 +61,8 @@ use super::*;
 
     #[async_trait::async_trait]
     impl UserRepository for MockUserRepository {
-        async fn get_by_user_name(&self, user_name: String) -> Result<Option<User>, sqlx::Error> {
-            Ok(self.users.get(&user_name).cloned())
+        async fn get_by_user_name(&self, email: String) -> Result<Option<User>, sqlx::Error> {
+            Ok(self.users.get(&email).cloned())
         }
     }
 
@@ -113,5 +121,11 @@ use super::*;
             credential: Some(generate_password_hash("password")),
             created_at: chrono::Utc::now(),
         })}
+    }
+
+    #[test]
+    fn print_password_hash() {
+        let hash = generate_password_hash("oYoqaZ4D6FqjfMqUQjyD");
+        println!("{}", hash);
     }
 }

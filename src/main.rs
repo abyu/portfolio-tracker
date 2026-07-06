@@ -11,13 +11,17 @@ mod db;
 mod routes;
 use routes::portfolio::{get_summary, get_holdings};
 use routes::import::import_csv;
+use routes::auth::login;
 mod service;
 mod tasks;
 use tasks::price_update_task::PriceUpdateTask;
 
 use crate::db::postgres_stock_trade_repository::PostgresStockTradeRepository;
+use crate::db::postgres_user_repository::PostgresUserRepository;
+use crate::service::jwt_service::JwtService;
 use crate::service::price_service::PriceService;
 use crate::service::ticker_price_service::TickerPriceService;
+use crate::service::user_service::UserService;
 use db::postgres_stock_price_repository::PostgresStockPriceRepository;
 use yahoo_finance_api::YahooConnector;
 use std::sync::Arc;
@@ -57,6 +61,10 @@ async fn main() {
     let task = std::sync::Arc::new(task);
     let task_clone = Arc::clone(&task);
 
+    let user_repo = PostgresUserRepository::new(pool.clone());
+    let user_service = Arc::new(UserService::new(user_repo));
+    let jwt_service = Arc::new(JwtService::new(config.jwt_secret));
+
     // spawn background jobs
     tokio::spawn(async move {
         // initial run at startup
@@ -77,11 +85,14 @@ async fn main() {
     let state = AppState {
         db: pool,
         price_service: price_service,
+        jwt_service: jwt_service,
+        user_service: user_service
     };
     let app = Router::new()
         .route("/api/portfolio/summary", get(get_summary))
         .route("/api/portfolio/holdings", get(get_holdings))
         .route("/api/trades/import", post(import_csv))
+        .route("/api/auth/login", post(login))
         .merge(SwaggerUi::new("/swagger-ui")
             .url("/api-docs/openapi.json", api_doc::ApiDoc::openapi()))
         .with_state(state);

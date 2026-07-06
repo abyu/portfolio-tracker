@@ -6,12 +6,15 @@ use utoipa::OpenApi;
         crate::routes::portfolio::get_summary,
         crate::routes::portfolio::get_holdings,
         crate::routes::import::import_csv,
+        crate::routes::auth::login,
     ),
     components(
         schemas(
             crate::models::portfolio::PortfolioSummary,
             crate::models::portfolio::Portfolio,
-            crate::routes::import::ImportResult
+            crate::routes::import::ImportResult,
+            crate::routes::auth::LoginRequest,
+            crate::routes::auth::LoginResponse,
         )
     ),
     tags(

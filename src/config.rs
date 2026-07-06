@@ -1,7 +1,8 @@
 #[derive(Clone)]
 pub struct AppConfig {
     pub server_port: u16,
-    pub db_url: String
+    pub db_url: String,
+    pub jwt_secret: String
 }
 const DEFAULT_PORT: u16 = 3000;
 
@@ -10,7 +11,8 @@ impl AppConfig {
         dotenvy::dotenv().ok();
         let port = Self::get_env_u16_or_default("SERVER_PORT", DEFAULT_PORT)?;
         let db_url = Self::get_env_string("DATABASE_URL")?;
-        Ok(AppConfig { server_port: port, db_url })
+        let jwt_secret = Self::get_env_string("JWT_SECRET")?;
+        Ok(AppConfig { server_port: port, db_url, jwt_secret })
     }
 
     fn get_env_string(key: &str) -> Result<String, ConfigError> {
