@@ -6,6 +6,7 @@ use utoipa::OpenApi;
         crate::routes::portfolio::get_summary,
         crate::routes::portfolio::get_holdings,
         crate::routes::import::import_csv,
+        crate::routes::import::import_trade_confirmation,
         crate::routes::auth::login,
     ),
     components(

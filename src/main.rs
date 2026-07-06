@@ -10,7 +10,7 @@ mod models;
 mod db;
 mod routes;
 use routes::portfolio::{get_summary, get_holdings};
-use routes::import::import_csv;
+use routes::import::{import_csv, import_trade_confirmation};
 use routes::auth::login;
 mod service;
 mod tasks;
@@ -92,6 +92,7 @@ async fn main() {
         .route("/api/portfolio/summary", get(get_summary))
         .route("/api/portfolio/holdings", get(get_holdings))
         .route("/api/trades/import", post(import_csv))
+        .route("/api/trades/import_trade_confirmation", post(import_trade_confirmation))
         .route("/api/auth/login", post(login))
         .merge(SwaggerUi::new("/swagger-ui")
             .url("/api-docs/openapi.json", api_doc::ApiDoc::openapi()))
