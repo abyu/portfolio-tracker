@@ -36,7 +36,7 @@ struct Error {
 }
 
 #[async_trait]
-pub trait OllamaHttpClient {
+pub trait OllamaHttpClient: Send + Sync {
     async fn parse_trade_confirmation(
         &self,
         parse_request: LLMExtractTradeTransactionRequest,
@@ -64,7 +64,7 @@ impl OllamaHttpClient for Ollama {
             "model": self.model,
             "messages": [{
                 "role": "user",
-                "content": "Extract the following fields ticker, quantity, price, total amount, fees, date across all these  trade confirmation images, skip any images if it not a valid trade confirmation file. Return response in this format Return ONLY valid JSON in this exact format, no other text:{is_success: true, error: null, body: [{ticker: String,trade_type: BUY | SELL,trade_date: String in format YYYY-MM-DD,units: f64,market_price_cents: i64,fees_cents: i64,amount_cents: i64,currency: String,}]}If none of them are a trade confirmation return:{is_success: false,error: reason here,body: null}",
+                "content": "Extract trade confirmation details from these images. Return ONLY valid JSON, no other text:\n\n{\n  \"is_success\": true,\n  \"error\": null,\n  \"body\": [{\n    \"ticker\": \"string\",\n    \"trade_type\": \"BUY or SELL\",\n    \"trade_date\": \"YYYY-MM-DD\",\n    \"units\": 0.0,\n    \"market_price_cents\": integer (no decimal point),\n    \"fees_cents\": integer (no decimal point),\n    \"amount_cents\": integer (no decimal point),\n    \"currency\": \"AUD\"\n  }]\n}\n\nIf no valid trade confirmation found:\n{\n  \"is_success\": false,\n  \"error\": \"reason\",\n  \"body\": null\n}",
                 "images": &parse_request.images
             }],
             "stream": false

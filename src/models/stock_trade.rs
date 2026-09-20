@@ -21,7 +21,7 @@ pub struct AggregatedStockTrade {
     pub currency: String,
 }
 
-#[derive(Debug)]
+#[derive(Debug, serde::Deserialize)]
 pub struct NewStockTrade {
     pub ticker: String,
     pub trade_type: String,

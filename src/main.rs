@@ -16,6 +16,7 @@ mod service;
 mod tasks;
 use tasks::price_update_task::PriceUpdateTask;
 
+use crate::clients::ollama::{Ollama, OllamaHttpClient};
 use crate::db::postgres_stock_trade_repository::PostgresStockTradeRepository;
 use crate::db::postgres_user_repository::PostgresUserRepository;
 use crate::service::jwt_service::JwtService;
@@ -31,6 +32,7 @@ mod api_doc;
 use utoipa_swagger_ui::SwaggerUi;
 use utoipa::OpenApi;
 mod import;
+mod clients;
 
 #[tokio::main]
 async fn main() {
@@ -65,6 +67,8 @@ async fn main() {
     let user_service = Arc::new(UserService::new(user_repo));
     let jwt_service = Arc::new(JwtService::new(config.jwt_secret));
 
+    let ollama_client = Arc::new(Ollama::new(reqwest::Client::new(), config.ollama_url, config.ollama_model));
+
     // spawn background jobs
     tokio::spawn(async move {
         // initial run at startup
@@ -86,7 +90,8 @@ async fn main() {
         db: pool,
         price_service: price_service,
         jwt_service: jwt_service,
-        user_service: user_service
+        user_service: user_service,
+        ollama_client: ollama_client
     };
     let app = Router::new()
         .route("/api/portfolio/summary", get(get_summary))
