@@ -10,7 +10,7 @@ pub struct StockTrade {
     pub amount_cents: i64,
     pub currency: String,
     pub created_at: chrono::DateTime<chrono::Utc>,
-    pub user_id: i64
+    pub user_id: i64,
 }
 
 #[derive(Debug, sqlx::FromRow, Clone)]

@@ -6,11 +6,9 @@ use crate::models::stock_price::StockPrice;
 
 #[async_trait]
 pub trait PriceService: Send + Sync {
-   async fn get_by_ticker(&self, ticker: &str) -> Result<Option<StockPrice>, PriceError>;
-   async fn update_prices(&self, tickers: Vec<String>) -> Result<(), PriceError>;
+    async fn get_by_ticker(&self, ticker: &str) -> Result<Option<StockPrice>, PriceError>;
+    async fn update_prices(&self, tickers: Vec<String>) -> Result<(), PriceError>;
 }
-
-
 
 #[derive(Debug, Error)]
 pub enum PriceError {

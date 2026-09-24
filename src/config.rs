@@ -7,7 +7,7 @@ pub struct AppConfig {
     pub ollama_model: String,
 }
 const DEFAULT_PORT: u16 = 3000;
-static  DEFAULT_MODEL: &str = "qwen3-vl:2b";
+static DEFAULT_MODEL: &str = "qwen3-vl:2b";
 
 impl AppConfig {
     pub fn load() -> Result<AppConfig, ConfigError> {
@@ -16,8 +16,15 @@ impl AppConfig {
         let db_url = Self::get_env_string("DATABASE_URL")?;
         let jwt_secret = Self::get_env_string("JWT_SECRET")?;
         let ollama_url = Self::get_env_string("OLLAMA_URL")?;
-        let ollama_model = Self::get_env_string_or_default("OLLAMA_MODEL", DEFAULT_MODEL.to_string());
-        Ok(AppConfig { server_port: port, db_url, jwt_secret, ollama_url, ollama_model })
+        let ollama_model =
+            Self::get_env_string_or_default("OLLAMA_MODEL", DEFAULT_MODEL.to_string());
+        Ok(AppConfig {
+            server_port: port,
+            db_url,
+            jwt_secret,
+            ollama_url,
+            ollama_model,
+        })
     }
 
     fn get_env_string(key: &str) -> Result<String, ConfigError> {
@@ -51,8 +58,8 @@ impl AppConfig {
 
 #[derive(Debug, thiserror::Error)]
 pub enum ConfigError {
-     #[error("Invalid value: {0}")]
+    #[error("Invalid value: {0}")]
     InvalidValue(String),
     #[error("Missing config value for: {0}")]
-    MissingValue(String)
+    MissingValue(String),
 }

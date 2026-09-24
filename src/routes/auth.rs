@@ -14,12 +14,17 @@ use crate::app_state::AppState;
     ),
     tag = "portfolio"
 )]
-pub async fn login(State(state): State<AppState>, Json(request): Json<LoginRequest>) -> Json<LoginResponse> {
-    let user = state.user_service.validate_credentials(request.email, request.password).await.unwrap();
+pub async fn login(
+    State(state): State<AppState>,
+    Json(request): Json<LoginRequest>,
+) -> Json<LoginResponse> {
+    let user = state
+        .user_service
+        .validate_credentials(request.email, request.password)
+        .await
+        .unwrap();
     let token = state.jwt_service.generate_token(user.id).unwrap();
-    Json(
-        LoginResponse { token }
-    )
+    Json(LoginResponse { token })
 }
 
 #[derive(serde::Deserialize, utoipa::ToSchema)]

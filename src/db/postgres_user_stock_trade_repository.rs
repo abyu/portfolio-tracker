@@ -1,4 +1,7 @@
-use crate::{models::stock_trade::{AggregatedStockTrade, NewStockTrade, StockTrade}, service::portfolio_service::UserStockTradeRepository};
+use crate::{
+    models::stock_trade::{AggregatedStockTrade, NewStockTrade, StockTrade},
+    service::portfolio_service::UserStockTradeRepository,
+};
 use async_trait::async_trait;
 
 pub struct PostgresUserStockTradeRepository {
@@ -28,10 +31,11 @@ impl UserStockTradeRepository for PostgresUserStockTradeRepository {
     }
 
     async fn get_all_trades(&self) -> Result<Vec<StockTrade>, sqlx::Error> {
-        let trades = sqlx::query_as::<_, StockTrade>("SELECT * FROM stock_trades WHERE user_id = $1")
-            .bind(self.user_id)
-            .fetch_all(&self.db_pool)
-            .await?;
+        let trades =
+            sqlx::query_as::<_, StockTrade>("SELECT * FROM stock_trades WHERE user_id = $1")
+                .bind(self.user_id)
+                .fetch_all(&self.db_pool)
+                .await?;
         Ok(trades)
     }
 
@@ -63,48 +67,24 @@ mod tests {
     use super::*;
 
     async fn create_test_user(pool: &sqlx::PgPool) -> i64 {
-        sqlx::query_scalar(
-            "INSERT INTO users (email, display_name) VALUES ($1, $2) RETURNING id"
-        )
-        .bind("test@example.com")
-        .bind("Test User")
-        .fetch_one(pool)
-        .await
-        .unwrap()
+        sqlx::query_scalar("INSERT INTO users (email, display_name) VALUES ($1, $2) RETURNING id")
+            .bind("test@example.com")
+            .bind("Test User")
+            .fetch_one(pool)
+            .await
+            .unwrap()
     }
 
     #[sqlx::test(migrations = "./migrations")]
-    async fn test_get_all_trades_returns_empty(pool :sqlx::PgPool) {
+    async fn test_get_all_trades_returns_empty(pool: sqlx::PgPool) {
         let user_id = create_test_user(&pool).await;
         let repo = PostgresUserStockTradeRepository::new(pool.clone(), user_id);
         let trades = repo.get_all_trades().await.unwrap();
         assert!(trades.is_empty());
     }
-    
-    #[sqlx::test(migrations = "./migrations")]
-    async fn test_get_all_trades_returns_records(pool :sqlx::PgPool) {
-        let user_id = create_test_user(&pool).await;
-        let repo = PostgresUserStockTradeRepository::new(pool.clone(), user_id);
-        repo.save_trade(NewStockTrade {
-            ticker: "AAPL".to_string(),
-            trade_type: "BUY".to_string(),
-            trade_date: "2024-01-01".to_string(),
-            units: 10.0,
-            market_price_cents: 15000,
-            fees_cents: 100,
-            amount_cents: 150000,
-            currency: "USD".to_string()
-        }).await.unwrap();
-        let trades = repo.get_all_trades().await.unwrap();
 
-        assert_eq!(trades.len(), 1);
-        assert_eq!(trades[0].ticker, "AAPL");
-        assert_eq!(trades[0].units, 10.0);
-        assert_eq!(trades[0].amount_cents, 150000);
-    }
-    
     #[sqlx::test(migrations = "./migrations")]
-    async fn test_get_aggregated_trades(pool :sqlx::PgPool) {
+    async fn test_get_all_trades_returns_records(pool: sqlx::PgPool) {
         let user_id = create_test_user(&pool).await;
         let repo = PostgresUserStockTradeRepository::new(pool.clone(), user_id);
         repo.save_trade(NewStockTrade {
@@ -116,7 +96,33 @@ mod tests {
             fees_cents: 100,
             amount_cents: 150000,
             currency: "USD".to_string(),
-        }).await.unwrap();
+        })
+        .await
+        .unwrap();
+        let trades = repo.get_all_trades().await.unwrap();
+
+        assert_eq!(trades.len(), 1);
+        assert_eq!(trades[0].ticker, "AAPL");
+        assert_eq!(trades[0].units, 10.0);
+        assert_eq!(trades[0].amount_cents, 150000);
+    }
+
+    #[sqlx::test(migrations = "./migrations")]
+    async fn test_get_aggregated_trades(pool: sqlx::PgPool) {
+        let user_id = create_test_user(&pool).await;
+        let repo = PostgresUserStockTradeRepository::new(pool.clone(), user_id);
+        repo.save_trade(NewStockTrade {
+            ticker: "AAPL".to_string(),
+            trade_type: "BUY".to_string(),
+            trade_date: "2024-01-01".to_string(),
+            units: 10.0,
+            market_price_cents: 15000,
+            fees_cents: 100,
+            amount_cents: 150000,
+            currency: "USD".to_string(),
+        })
+        .await
+        .unwrap();
         repo.save_trade(NewStockTrade {
             ticker: "AAPL".to_string(),
             trade_type: "SELL".to_string(),
@@ -126,7 +132,9 @@ mod tests {
             fees_cents: 100,
             amount_cents: 160000,
             currency: "USD".to_string(),
-        }).await.unwrap();
+        })
+        .await
+        .unwrap();
         repo.save_trade(NewStockTrade {
             ticker: "AAPL".to_string(),
             trade_type: "BUY".to_string(),
@@ -136,7 +144,9 @@ mod tests {
             fees_cents: 100,
             amount_cents: 190000,
             currency: "USD".to_string(),
-        }).await.unwrap();
+        })
+        .await
+        .unwrap();
         repo.save_trade(NewStockTrade {
             ticker: "GOOG".to_string(),
             trade_type: "BUY".to_string(),
@@ -146,7 +156,9 @@ mod tests {
             fees_cents: 100,
             amount_cents: 100000,
             currency: "USD".to_string(),
-        }).await.unwrap();
+        })
+        .await
+        .unwrap();
         let trades = repo.get_aggregated().await.unwrap();
 
         assert_eq!(trades.len(), 2);

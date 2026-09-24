@@ -13,25 +13,25 @@ pub struct Ollama {
 struct OllamaResponse {
     model: String,
     created_at: String,
-    message: Message 
+    message: Message,
 }
 
 #[derive(Deserialize)]
 struct Message {
     role: String,
-    content: String
+    content: String,
 }
 
 #[derive(Deserialize)]
 struct Content {
     is_success: bool,
     error: Option<Error>,
-    body: Option<Vec<NewStockTrade>>
+    body: Option<Vec<NewStockTrade>>,
 }
 
 #[derive(Deserialize)]
 struct Error {
-    reason: String
+    reason: String,
 }
 
 #[async_trait]
@@ -69,18 +69,27 @@ impl OllamaHttpClient for Ollama {
             "stream": false
         });
 
-        let response = self.client.post(chat_url).json(&request).send().await?
-        .json::<OllamaResponse>()
-        .await?;
+        let response = self
+            .client
+            .post(chat_url)
+            .json(&request)
+            .send()
+            .await?
+            .json::<OllamaResponse>()
+            .await?;
 
-        let value : Content = serde_json::from_str(response.message.content.trim()).map_err(|e| ParseError::ParseError(e.to_string()))?;
+        let value: Content = serde_json::from_str(response.message.content.trim())
+            .map_err(|e| ParseError::ParseError(e.to_string()))?;
 
         if value.is_success {
             return Ok(value.body.unwrap_or_default());
         }
 
         Err(ParseError::InvalidTradeData(
-            value.error.map(|e| e.reason).unwrap_or("Unknown error".to_string())
+            value
+                .error
+                .map(|e| e.reason)
+                .unwrap_or("Unknown error".to_string()),
         ))
     }
 }
@@ -95,11 +104,13 @@ pub enum ParseError {
     InvalidTradeData(String),
 }
 
-
 #[cfg(test)]
 mod test {
     use super::*;
-    use wiremock::{Mock, MockServer, ResponseTemplate, matchers::{self, method}};
+    use wiremock::{
+        Mock, MockServer, ResponseTemplate,
+        matchers::{self, method},
+    };
 
     #[tokio::test]
     async fn test_success_response_from_ollama() {
@@ -117,7 +128,8 @@ mod test {
                 "amount_cents": 150500,
                 "currency": "AUD"
             }]
-        })).unwrap();
+        }))
+        .unwrap();
 
         let sample_response = ResponseTemplate::new(200).set_body_json(json!({
             "model": "test-model",
@@ -128,16 +140,19 @@ mod test {
             }
         }));
 
-        Mock::given(method("POST")).and(matchers::path("/api/chat")).respond_with(
-            sample_response
-        ).mount(&sev).await;
-        let cli  = Ollama::new(reqwest::Client::new(), sev.uri(), "model".to_string());
+        Mock::given(method("POST"))
+            .and(matchers::path("/api/chat"))
+            .respond_with(sample_response)
+            .mount(&sev)
+            .await;
+        let cli = Ollama::new(reqwest::Client::new(), sev.uri(), "model".to_string());
 
-        let resp = cli.parse_trade_confirmation(LLMExtractTradeTransactionRequest { images: vec![] }).await;
+        let resp = cli
+            .parse_trade_confirmation(LLMExtractTradeTransactionRequest { images: vec![] })
+            .await;
 
         // assert!(resp.is_ok());
         assert_eq!(resp.unwrap().len(), 1)
-
     }
 
     #[tokio::test]
@@ -153,12 +168,16 @@ mod test {
             }
         }));
 
-        Mock::given(method("POST")).and(matchers::path("/api/chat")).respond_with(
-            sample_response
-        ).mount(&sev).await;
-        let cli  = Ollama::new(reqwest::Client::new(), sev.uri(), "model".to_string());
+        Mock::given(method("POST"))
+            .and(matchers::path("/api/chat"))
+            .respond_with(sample_response)
+            .mount(&sev)
+            .await;
+        let cli = Ollama::new(reqwest::Client::new(), sev.uri(), "model".to_string());
 
-        let resp = cli.parse_trade_confirmation(LLMExtractTradeTransactionRequest { images: vec![] }).await;
+        let resp = cli
+            .parse_trade_confirmation(LLMExtractTradeTransactionRequest { images: vec![] })
+            .await;
 
         assert!(resp.is_err_and(|e| matches!(e, ParseError::ParseError(_))));
     }
@@ -172,7 +191,8 @@ mod test {
             "error": {
                 "reason": "NO TRADE DATA_FOUND"
             }
-        })).unwrap();
+        }))
+        .unwrap();
 
         let sample_response = ResponseTemplate::new(200).set_body_json(json!({
             "model": "test-model",
@@ -183,23 +203,31 @@ mod test {
             }
         }));
 
-        Mock::given(method("POST")).and(matchers::path("/api/chat")).respond_with(
-            sample_response
-        ).mount(&sev).await;
-        let cli  = Ollama::new(reqwest::Client::new(), sev.uri(), "model".to_string());
+        Mock::given(method("POST"))
+            .and(matchers::path("/api/chat"))
+            .respond_with(sample_response)
+            .mount(&sev)
+            .await;
+        let cli = Ollama::new(reqwest::Client::new(), sev.uri(), "model".to_string());
 
-        let resp = cli.parse_trade_confirmation(LLMExtractTradeTransactionRequest { images: vec![] }).await;
+        let resp = cli
+            .parse_trade_confirmation(LLMExtractTradeTransactionRequest { images: vec![] })
+            .await;
 
-        assert!(resp.is_err_and(|e| matches!(e, ParseError::InvalidTradeData(msg) if msg == "NO TRADE DATA_FOUND")));
+        assert!(resp.is_err_and(
+            |e| matches!(e, ParseError::InvalidTradeData(msg) if msg == "NO TRADE DATA_FOUND")
+        ));
     }
 
     #[tokio::test]
     async fn test_missing_response_from_ollama() {
         let sev = MockServer::start().await;
 
-        let cli  = Ollama::new(reqwest::Client::new(), sev.uri(), "model".to_string());
+        let cli = Ollama::new(reqwest::Client::new(), sev.uri(), "model".to_string());
 
-        let resp = cli.parse_trade_confirmation(LLMExtractTradeTransactionRequest { images: vec![] }).await;
+        let resp = cli
+            .parse_trade_confirmation(LLMExtractTradeTransactionRequest { images: vec![] })
+            .await;
 
         assert!(resp.is_err_and(|e| matches!(e, ParseError::HttpError(_))));
     }
@@ -210,7 +238,8 @@ mod test {
 
         let inner_content = serde_json::to_string(&json!({
             "is_success": true,
-        })).unwrap();
+        }))
+        .unwrap();
 
         let sample_response = ResponseTemplate::new(200).set_body_json(json!({
             "model": "test-model",
@@ -221,12 +250,16 @@ mod test {
             }
         }));
 
-        Mock::given(method("POST")).and(matchers::path("/api/chat")).respond_with(
-            sample_response
-        ).mount(&sev).await;
-        let cli  = Ollama::new(reqwest::Client::new(), sev.uri(), "model".to_string());
+        Mock::given(method("POST"))
+            .and(matchers::path("/api/chat"))
+            .respond_with(sample_response)
+            .mount(&sev)
+            .await;
+        let cli = Ollama::new(reqwest::Client::new(), sev.uri(), "model".to_string());
 
-        let resp = cli.parse_trade_confirmation(LLMExtractTradeTransactionRequest { images: vec![] }).await;
+        let resp = cli
+            .parse_trade_confirmation(LLMExtractTradeTransactionRequest { images: vec![] })
+            .await;
 
         assert!(resp.is_ok_and(|f| f.is_empty()));
     }
@@ -237,7 +270,8 @@ mod test {
 
         let inner_content = serde_json::to_string(&json!({
             "is_success": false,
-        })).unwrap();
+        }))
+        .unwrap();
 
         let sample_response = ResponseTemplate::new(200).set_body_json(json!({
             "model": "test-model",
@@ -248,14 +282,20 @@ mod test {
             }
         }));
 
-        Mock::given(method("POST")).and(matchers::path("/api/chat")).respond_with(
-            sample_response
-        ).mount(&sev).await;
-        let cli  = Ollama::new(reqwest::Client::new(), sev.uri(), "model".to_string());
+        Mock::given(method("POST"))
+            .and(matchers::path("/api/chat"))
+            .respond_with(sample_response)
+            .mount(&sev)
+            .await;
+        let cli = Ollama::new(reqwest::Client::new(), sev.uri(), "model".to_string());
 
-        let resp = cli.parse_trade_confirmation(LLMExtractTradeTransactionRequest { images: vec![] }).await;
+        let resp = cli
+            .parse_trade_confirmation(LLMExtractTradeTransactionRequest { images: vec![] })
+            .await;
 
-        assert!(resp.is_err_and(|f| matches!(f, ParseError::InvalidTradeData(msg) if msg == "Unknown error")));
+        assert!(resp.is_err_and(
+            |f| matches!(f, ParseError::InvalidTradeData(msg) if msg == "Unknown error")
+        ));
     }
 
     #[tokio::test]
@@ -266,7 +306,8 @@ mod test {
             "is_success": true,
             "error": null,
             "body": []
-        })).unwrap();
+        }))
+        .unwrap();
 
         let sample_response = ResponseTemplate::new(200).set_body_json(json!({
             "model": "test-model",
@@ -277,10 +318,6 @@ mod test {
             }
         }));
 
-        // Only responds if the outgoing request actually contains this model
-        // name and these images — anything else (wrong model, missing/wrong
-        // images) falls through to wiremock's default response, which fails
-        // to deserialize and surfaces as a ParseError::HttpError below.
         Mock::given(method("POST"))
             .and(matchers::path("/api/chat"))
             .and(matchers::body_partial_json(json!({
@@ -293,13 +330,18 @@ mod test {
             .mount(&sev)
             .await;
 
-        let cli = Ollama::new(reqwest::Client::new(), sev.uri(), "test-model-check".to_string());
+        let cli = Ollama::new(
+            reqwest::Client::new(),
+            sev.uri(),
+            "test-model-check".to_string(),
+        );
 
-        let resp = cli.parse_trade_confirmation(LLMExtractTradeTransactionRequest {
-            images: vec!["img-data-1".to_string(), "img-data-2".to_string()]
-        }).await;
+        let resp = cli
+            .parse_trade_confirmation(LLMExtractTradeTransactionRequest {
+                images: vec!["img-data-1".to_string(), "img-data-2".to_string()],
+            })
+            .await;
 
         assert!(resp.is_ok());
     }
-
 }

@@ -1,8 +1,6 @@
 use crate::models::trade_confirmation_import_job::NewTradeConfirmationImportJob;
 
-pub struct JobsService {
-
-}
+pub struct JobsService {}
 
 #[async_trait::async_trait]
 pub trait JobsRepository {
@@ -12,5 +10,5 @@ pub trait JobsRepository {
 #[derive(Debug, thiserror::Error)]
 pub enum JobsError {
     #[error("Db error {0}")]
-    DBError(#[from] sqlx::Error)
+    DBError(#[from] sqlx::Error),
 }

@@ -133,8 +133,14 @@ mod test {
     #[tokio::test]
     async fn test_update_price_skips_for_ticker_with_fresh_prices() {
         let price_provider = MockPriceProvider { price: 34.23 };
-        let repo =
-            MockStockPriceRepository::new([("VDHG".to_string(), new_stock_price("VDHG".to_string(), 3423))].into_iter().collect());
+        let repo = MockStockPriceRepository::new(
+            [(
+                "VDHG".to_string(),
+                new_stock_price("VDHG".to_string(), 3423),
+            )]
+            .into_iter()
+            .collect(),
+        );
         let svc = TickerPriceService::new(repo, price_provider);
 
         svc.update_prices(vec!["VDHG".to_string()]).await.unwrap();
@@ -144,13 +150,13 @@ mod test {
         assert_eq!(price.len(), 0);
     }
 
-    fn new_stock_price(ticker: String, price: i64) -> StockPrice{
-        StockPrice{
+    fn new_stock_price(ticker: String, price: i64) -> StockPrice {
+        StockPrice {
             id: 0,
             ticker: ticker.clone(),
             price_cents: price,
             currency: "AUD".to_string(),
-            fetched_at: Utc::now()
+            fetched_at: Utc::now(),
         }
     }
 }

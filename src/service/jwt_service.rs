@@ -45,7 +45,6 @@ pub enum JwtError {
     TokenGenerationError(String),
 }
 
-
 #[cfg(test)]
 mod test {
     use super::*;
@@ -69,5 +68,4 @@ mod test {
 
         assert!(result.is_err_and(|f| matches!(f, JwtError::InvalidToken(_))));
     }
-
 }

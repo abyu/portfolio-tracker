@@ -1,12 +1,13 @@
+use base64::{Engine as _, engine::general_purpose};
 use pdf2image::{PDF, PDF2ImageError, RenderOptionsBuilder, image};
-use base64::{engine::general_purpose, Engine as _};
 use std::io::Cursor;
 
 pub fn parse_trade_confirmation(content: &[u8]) -> Result<Vec<String>, ConfirmationParseError> {
     let pdf = PDF::from_bytes(content.to_vec())?;
     let pages = pdf.render(
         pdf2image::Pages::Range(1..=8),
-        RenderOptionsBuilder::default().build()
+        RenderOptionsBuilder::default()
+            .build()
             .map_err(|e| ConfirmationParseError::ImageRenderError(e.to_string()))?,
     )?;
 

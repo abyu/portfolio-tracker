@@ -1,10 +1,11 @@
 use std::sync::Arc;
 
 use crate::models::stock_trade::{NewStockTrade, StockTrade};
-use crate::models::{portfolio::Portfolio, portfolio::PortfolioSummary, stock_trade::AggregatedStockTrade};
+use crate::models::{
+    portfolio::Portfolio, portfolio::PortfolioSummary, stock_trade::AggregatedStockTrade,
+};
 use crate::service::price_service::{PriceError, PriceService};
 use async_trait::async_trait;
-
 
 #[async_trait]
 pub trait PortfolioServiceTrait: Send + Sync {
@@ -12,9 +13,9 @@ pub trait PortfolioServiceTrait: Send + Sync {
     async fn get_summary(&self) -> Result<PortfolioSummary, PortfolioError>;
 }
 
-pub struct PortfolioService<S: UserStockTradeRepository>{
+pub struct PortfolioService<S: UserStockTradeRepository> {
     stock_trades_repo: S,
-    price_service: Arc<dyn PriceService>
+    price_service: Arc<dyn PriceService>,
 }
 
 #[async_trait]
@@ -26,23 +27,28 @@ pub trait UserStockTradeRepository: Send + Sync {
 
 impl<S: UserStockTradeRepository> PortfolioService<S> {
     pub fn new(stock_trades: S, stock_prices: Arc<dyn PriceService>) -> Self {
-        Self { stock_trades_repo: stock_trades, price_service: stock_prices }
+        Self {
+            stock_trades_repo: stock_trades,
+            price_service: stock_prices,
+        }
     }
 }
 
 #[async_trait]
-impl <P: UserStockTradeRepository> PortfolioServiceTrait for PortfolioService<P> {
+impl<P: UserStockTradeRepository> PortfolioServiceTrait for PortfolioService<P> {
     async fn get_portfolio(&self) -> Result<Vec<Portfolio>, PortfolioError> {
         let trades = self.stock_trades_repo.get_aggregated().await?;
         let mut portfolios = Vec::new();
-    
+
         for trade in trades {
             if let Some(price) = self.price_service.get_by_ticker(&trade.ticker).await? {
-                let total_value_cents = (trade.total_units * price.price_cents as f64).round() as i64;
+                let total_value_cents =
+                    (trade.total_units * price.price_cents as f64).round() as i64;
                 portfolios.push(Portfolio {
                     ticker: trade.ticker,
                     units: trade.total_units,
-                    average_price_cents: (trade.total_amount_cents as f64 / trade.total_units).round() as i64,
+                    average_price_cents: (trade.total_amount_cents as f64 / trade.total_units)
+                        .round() as i64,
                     current_price_cents: price.price_cents,
                     gain_loss_cents: total_value_cents - trade.total_amount_cents,
                     currency: trade.currency,
@@ -53,38 +59,43 @@ impl <P: UserStockTradeRepository> PortfolioServiceTrait for PortfolioService<P>
     }
 
     async fn get_summary(&self) -> Result<PortfolioSummary, PortfolioError> {
-        let portfolio = self.get_portfolio().await?;  
+        let portfolio = self.get_portfolio().await?;
         if portfolio.is_empty() {
             return Ok(PortfolioSummary::empty());
         }
 
-        let currency = portfolio.first().map(|f: &Portfolio| f.currency.clone()).unwrap_or("AUD".to_string());
-        let (total_value, total_gain_loss ) = portfolio.iter().fold(
-            (0i64, 0i64),
-            |acc, p| (
+        let currency = portfolio
+            .first()
+            .map(|f: &Portfolio| f.currency.clone())
+            .unwrap_or("AUD".to_string());
+        let (total_value, total_gain_loss) = portfolio.iter().fold((0i64, 0i64), |acc, p| {
+            (
                 acc.0 + (p.current_price_cents as f64 * p.units).round() as i64,
-                acc.1 + p.gain_loss_cents
+                acc.1 + p.gain_loss_cents,
             )
-        );
+        });
 
-
-        Ok(PortfolioSummary { total_value_price_cents: total_value, total_gain_loss_cents: total_gain_loss, currency: currency })
+        Ok(PortfolioSummary {
+            total_value_price_cents: total_value,
+            total_gain_loss_cents: total_gain_loss,
+            currency: currency,
+        })
     }
 }
 
 #[derive(Debug, thiserror::Error)]
-pub enum PortfolioError{
+pub enum PortfolioError {
     #[error("Portfolio DB error: {0}")]
     DBError(#[from] sqlx::Error),
     #[error("Service error: {0}")]
-    ServiceErro(#[from] PriceError)
+    ServiceErro(#[from] PriceError),
 }
 
 #[cfg(test)]
-mod test{
-    use std::collections::HashMap;
+mod test {
     use super::*;
-    use crate::{models::stock_price::{StockPrice}, service::price_service::PriceError};
+    use crate::{models::stock_price::StockPrice, service::price_service::PriceError};
+    use std::collections::HashMap;
 
     struct MockRepository {
         trades: Vec<AggregatedStockTrade>,
@@ -97,12 +108,12 @@ mod test{
     }
 
     struct MockPriceService {
-        prices: HashMap<String, StockPrice>
+        prices: HashMap<String, StockPrice>,
     }
 
     impl MockPriceService {
         fn new(prices: HashMap<String, StockPrice>) -> Self {
-            Self {  prices }
+            Self { prices }
         }
     }
 
@@ -134,9 +145,20 @@ mod test{
     #[tokio::test]
     async fn test_build_portfolio_based_on_ticker_current_price() {
         let prices_repo = Arc::new(MockPriceService::new(
-            [("VDHG".to_string(), StockPrice{id: 1, ticker: "VDHG".to_string(), price_cents: 3623, currency: "AUD".to_string(), fetched_at: chrono::Utc::now()})].into_iter().collect()
+            [(
+                "VDHG".to_string(),
+                StockPrice {
+                    id: 1,
+                    ticker: "VDHG".to_string(),
+                    price_cents: 3623,
+                    currency: "AUD".to_string(),
+                    fetched_at: chrono::Utc::now(),
+                },
+            )]
+            .into_iter()
+            .collect(),
         ));
-        let trades_repo = MockRepository::new(vec![AggregatedStockTrade{
+        let trades_repo = MockRepository::new(vec![AggregatedStockTrade {
             ticker: "VDHG".to_string(),
             total_units: 20.0,
             total_amount_cents: 68460,
@@ -156,19 +178,33 @@ mod test{
     #[tokio::test]
     async fn test_build_portfolio_skips_tickers_with_no_current_price() {
         let prices_repo = Arc::new(MockPriceService::new(
-            [("VDHG".to_string(), StockPrice{id: 1, ticker: "VDHG".to_string(), price_cents: 3623, currency: "AUD".to_string(), fetched_at: chrono::Utc::now()})].into_iter().collect()
+            [(
+                "VDHG".to_string(),
+                StockPrice {
+                    id: 1,
+                    ticker: "VDHG".to_string(),
+                    price_cents: 3623,
+                    currency: "AUD".to_string(),
+                    fetched_at: chrono::Utc::now(),
+                },
+            )]
+            .into_iter()
+            .collect(),
         ));
-        let trades_repo = MockRepository::new(vec![AggregatedStockTrade{
-            ticker: "VDHG".to_string(),
-            total_units: 20.0,
-            total_amount_cents: 68460,
-            currency: "AUD".to_string(),
-        }, AggregatedStockTrade{
-            ticker: "VAS".to_string(),
-            total_units: 20.0,
-            total_amount_cents: 68460,
-            currency: "AUD".to_string(),
-        }]);
+        let trades_repo = MockRepository::new(vec![
+            AggregatedStockTrade {
+                ticker: "VDHG".to_string(),
+                total_units: 20.0,
+                total_amount_cents: 68460,
+                currency: "AUD".to_string(),
+            },
+            AggregatedStockTrade {
+                ticker: "VAS".to_string(),
+                total_units: 20.0,
+                total_amount_cents: 68460,
+                currency: "AUD".to_string(),
+            },
+        ]);
         let svc = PortfolioService::new(trades_repo, prices_repo);
 
         let portfolio = svc.get_portfolio().await.unwrap();
@@ -182,20 +218,21 @@ mod test{
 
     #[tokio::test]
     async fn test_empty_portfolio_summary() {
-        let prices_repo = Arc::new(MockPriceService::new(
-           HashMap::new()
-        ));
-        let trades_repo = MockRepository::new(vec![AggregatedStockTrade{
-            ticker: "VDHG".to_string(),
-            total_units: 20.0,
-            total_amount_cents: 68460,
-            currency: "AUD".to_string(),
-        }, AggregatedStockTrade{
-            ticker: "VAS".to_string(),
-            total_units: 20.0,
-            total_amount_cents: 68460,
-            currency: "AUD".to_string(),
-        }]);
+        let prices_repo = Arc::new(MockPriceService::new(HashMap::new()));
+        let trades_repo = MockRepository::new(vec![
+            AggregatedStockTrade {
+                ticker: "VDHG".to_string(),
+                total_units: 20.0,
+                total_amount_cents: 68460,
+                currency: "AUD".to_string(),
+            },
+            AggregatedStockTrade {
+                ticker: "VAS".to_string(),
+                total_units: 20.0,
+                total_amount_cents: 68460,
+                currency: "AUD".to_string(),
+            },
+        ]);
         let svc = PortfolioService::new(trades_repo, prices_repo);
 
         let summary = svc.get_summary().await.unwrap();
@@ -207,22 +244,45 @@ mod test{
     #[tokio::test]
     async fn test_portfolio_summary_from_all_trades() {
         let prices_repo = Arc::new(MockPriceService::new(
-           [
-            ("VDHG".to_string(), StockPrice{id: 1, ticker: "VDHG".to_string(), price_cents: 6000, currency: "AUD".to_string(), fetched_at: chrono::Utc::now()}),
-            ("VAS".to_string(), StockPrice{id: 1, ticker: "VAS".to_string(), price_cents: 5000, currency: "AUD".to_string(), fetched_at: chrono::Utc::now()})
-           ].into_iter().collect()
+            [
+                (
+                    "VDHG".to_string(),
+                    StockPrice {
+                        id: 1,
+                        ticker: "VDHG".to_string(),
+                        price_cents: 6000,
+                        currency: "AUD".to_string(),
+                        fetched_at: chrono::Utc::now(),
+                    },
+                ),
+                (
+                    "VAS".to_string(),
+                    StockPrice {
+                        id: 1,
+                        ticker: "VAS".to_string(),
+                        price_cents: 5000,
+                        currency: "AUD".to_string(),
+                        fetched_at: chrono::Utc::now(),
+                    },
+                ),
+            ]
+            .into_iter()
+            .collect(),
         ));
-        let trades_repo = MockRepository::new(vec![AggregatedStockTrade{
-            ticker: "VDHG".to_string(),
-            total_units: 20.0,
-            total_amount_cents: 80000,
-            currency: "AUD".to_string(),
-        }, AggregatedStockTrade{
-            ticker: "VAS".to_string(),
-            total_units: 10.0,
-            total_amount_cents: 60000,
-            currency: "AUD".to_string(),
-        }]);
+        let trades_repo = MockRepository::new(vec![
+            AggregatedStockTrade {
+                ticker: "VDHG".to_string(),
+                total_units: 20.0,
+                total_amount_cents: 80000,
+                currency: "AUD".to_string(),
+            },
+            AggregatedStockTrade {
+                ticker: "VAS".to_string(),
+                total_units: 10.0,
+                total_amount_cents: 60000,
+                currency: "AUD".to_string(),
+            },
+        ]);
         let svc = PortfolioService::new(trades_repo, prices_repo);
 
         let summary = svc.get_summary().await.unwrap();
@@ -230,5 +290,4 @@ mod test{
         assert_eq!(summary.total_gain_loss_cents, 30000);
         assert_eq!(summary.total_value_price_cents, 170000);
     }
-
 }

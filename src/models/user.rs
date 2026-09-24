@@ -4,7 +4,7 @@ pub struct User {
     pub email: String,
     pub display_name: Option<String>,
     pub created_at: chrono::DateTime<chrono::Utc>,
-    pub auth: Option<UserAuth>
+    pub auth: Option<UserAuth>,
 }
 
 #[derive(Debug, Clone, sqlx::FromRow, serde::Serialize)]

@@ -4,7 +4,7 @@ use crate::service::price_service::PriceService;
 
 pub struct PriceUpdateTask<P: StockTradeRepository> {
     price_update_service: Arc<dyn PriceService>,
-    stocks_repo: P
+    stocks_repo: P,
 }
 
 #[async_trait::async_trait]
@@ -14,7 +14,10 @@ pub trait StockTradeRepository {
 
 impl<P: StockTradeRepository> PriceUpdateTask<P> {
     pub fn new(price_update_service: Arc<dyn PriceService>, stocks_repo: P) -> Self {
-        Self { price_update_service, stocks_repo }
+        Self {
+            price_update_service,
+            stocks_repo,
+        }
     }
 
     pub async fn start(&self) -> Result<(), PriceTaskError> {
@@ -25,9 +28,9 @@ impl<P: StockTradeRepository> PriceUpdateTask<P> {
 }
 
 #[derive(Debug, thiserror::Error)]
-pub enum PriceTaskError{
+pub enum PriceTaskError {
     #[error("Update error: {0}")]
     PriceUpdateError(#[from] crate::service::price_service::PriceError),
     #[error("DB error: {0}")]
-    DBError(#[from] sqlx::Error)
+    DBError(#[from] sqlx::Error),
 }

@@ -13,13 +13,13 @@ impl StockPriceRepository for PostgresStockPriceRepository {
                 ON CONFLICT(ticker) DO UPDATE SET 
                 price_cents = excluded.price_cents,
                 fetched_at = NOW()
-                RETURNING id"
-            )
-            .bind(price.ticker)
-            .bind(price.price_cents)
-            .bind(price.currency)
-            .fetch_one(&self.pool)
-            .await?;
+                RETURNING id",
+        )
+        .bind(price.ticker)
+        .bind(price.price_cents)
+        .bind(price.currency)
+        .fetch_one(&self.pool)
+        .await?;
         Ok(result)
     }
 
@@ -43,27 +43,45 @@ mod tests {
     use super::*;
 
     #[sqlx::test(migrations = "./migrations")]
-    async fn test_get_ticker_price_for_missing_ticker_returns_none(pool :sqlx::PgPool) {
+    async fn test_get_ticker_price_for_missing_ticker_returns_none(pool: sqlx::PgPool) {
         let repo = PostgresStockPriceRepository::new(pool);
         let price = repo.get_by_ticker("VDHG").await.unwrap();
         assert!(price.is_none());
     }
-    
+
     #[sqlx::test(migrations = "./migrations")]
-    async fn test_get_ticker_price_for_a_ticker(pool :sqlx::PgPool) {
+    async fn test_get_ticker_price_for_a_ticker(pool: sqlx::PgPool) {
         let repo = PostgresStockPriceRepository::new(pool);
-        let _ = repo.upsert_price(NewStockPrice { ticker: "VDHG".to_string(), price_cents: 3422, currency: "AUD".to_string()}).await;
+        let _ = repo
+            .upsert_price(NewStockPrice {
+                ticker: "VDHG".to_string(),
+                price_cents: 3422,
+                currency: "AUD".to_string(),
+            })
+            .await;
         let price = repo.get_by_ticker("VDHG").await.unwrap();
         assert!(price.is_some_and(|v| v.price_cents == 3422 && v.ticker == "VDHG"));
     }
 
     #[sqlx::test(migrations = "./migrations")]
-    async fn test_upsert_when_price_for_ticker_exists(pool :sqlx::PgPool) {
+    async fn test_upsert_when_price_for_ticker_exists(pool: sqlx::PgPool) {
         let repo = PostgresStockPriceRepository::new(pool);
-        let _ = repo.upsert_price(NewStockPrice { ticker: "VDHG".to_string(), price_cents: 3422, currency: "AUD".to_string()}).await;
+        let _ = repo
+            .upsert_price(NewStockPrice {
+                ticker: "VDHG".to_string(),
+                price_cents: 3422,
+                currency: "AUD".to_string(),
+            })
+            .await;
         let old_price = repo.get_by_ticker("VDHG").await.unwrap();
-        
-        let _ = repo.upsert_price(NewStockPrice { ticker: "VDHG".to_string(), price_cents: 3522, currency: "AUD".to_string()}).await;
+
+        let _ = repo
+            .upsert_price(NewStockPrice {
+                ticker: "VDHG".to_string(),
+                price_cents: 3522,
+                currency: "AUD".to_string(),
+            })
+            .await;
         let new_price = repo.get_by_ticker("VDHG").await.unwrap();
 
         assert!(old_price.is_some_and(|v| v.price_cents == 3422 && v.ticker == "VDHG"));
